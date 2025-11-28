@@ -3,23 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <link rel="stylesheet" type="text/css" href="style.css">
 <title>Link Chat</title>
-
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- Top buttons -->
+<!-- TOP BUTTONS -->
 <div id="top-buttons">
+  <button id="hamburger-btn">☰</button>
   <button id="create-chat">Create Chat</button>
   <button id="join-chat">Join Chat</button>
-  <button id="profile-btn" style="position:absolute; right:20px; top:10px;">Profile</button>
-   <button id="hamburger-btn" style="display:none;">☰</button>
+  <button id="profile-btn">Profile</button>
 </div>
 
+<!-- MOBILE SLIDE MENU -->
+<div id="mobile-menu">
+  <h3>Room Settings</h3>
+  <input type="text" id="mobile-room-id" placeholder="Enter Room ID">
+  <input type="text" id="mobile-room-pass" placeholder="Enter Room Password">
+  <button id="mobile-join">Join</button>
+  <button id="mobile-create">Create</button>
+</div>
 
-   
-<!-- Profile Modal -->
+<!-- PROFILE MODAL -->
 <div id="profile-modal">
   <div>
     <h3>Set Profile</h3>
@@ -29,19 +35,10 @@
   </div>
 </div>
 
-
-<div id="mobile-menu">
-  <h3>Room Settings</h3>
-
-  <input type="text" id="mobile-room-id" placeholder="Enter Room ID">
-  <input type="text" id="mobile-room-pass" placeholder="Enter Room Password">
-
-  <button id="mobile-join">Join</button>
-  <button id="mobile-create">Create</button>
-</div>
-   
+<!-- MAIN -->
 <div id="container">
-  <!-- Left Panel -->
+
+  <!-- LEFT PANEL DESKTOP -->
   <div id="room-panel">
     <h3>Room Info</h3>
     <p id="room-id-display">Room ID: -</p>
@@ -55,20 +52,19 @@
     </div>
   </div>
 
-  <!-- Right Panel: Chat -->
+  <!-- CHAT PANEL -->
   <div id="chat-panel">
     <div id="messages"></div>
+
     <div id="input-section">
       <input type="text" id="message-input" placeholder="Type a message">
       <button id="send">Send</button>
     </div>
   </div>
+
 </div>
 
 <script type="module" src="app.js"></script>
+
 </body>
 </html>
-
-
-
-
