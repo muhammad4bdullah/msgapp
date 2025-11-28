@@ -64,8 +64,9 @@ createBtn.onclick = async ()=>{
   await setDoc(doc(db,"rooms",roomId),{password});
   roomIdDisplay.textContent=`Room ID: ${roomId}`;
   roomPassDisplay.textContent=`Password: ${password}`;
-  const link = `${window.location.origin}?room=${roomId}&pass=${password}`;
-  linkDisplay.innerHTML=`Share link: <a href="${link}" target="_blank" style="color:#0d6efd;">${link}</a>`;
+const link = `${window.location.origin}/msgapp/?room=${roomId}&pass=${password}`;
+linkDisplay.innerHTML = `Share link: <a href="${link}" target="_blank" style="color:#0d6efd;">${link}</a>`;
+
   enterChat();
 }
 
@@ -81,7 +82,8 @@ joinRoomBtn.onclick = async ()=>{
   currentRoomId=roomId;
   roomIdDisplay.textContent=`Room ID: ${roomId}`;
   roomPassDisplay.textContent=`Password: ${password}`;
-  linkDisplay.innerHTML=`Share link: <a href="${window.location.origin}?room=${roomId}&pass=${password}" target="_blank" style="color:#0d6efd;">${window.location.origin}?room=${roomId}&pass=${password}</a>`;
+linkDisplay.innerHTML = `Share link: <a href="${window.location.origin}/msgapp/?room=${roomId}&pass=${password}" target="_blank" style="color:#0d6efd;">${window.location.origin}/msgapp/?room=${roomId}&pass=${password}</a>`;
+
   enterChat();
 }
 
@@ -95,7 +97,8 @@ if(urlRoom && urlPass){
       currentRoomId=urlRoom;
       roomIdDisplay.textContent=`Room ID: ${urlRoom}`;
       roomPassDisplay.textContent=`Password: ${urlPass}`;
-      linkDisplay.innerHTML=`Share link: <a href="${window.location.origin}?room=${urlRoom}&pass=${urlPass}" target="_blank" style="color:#0d6efd;">${window.location.origin}?room=${urlRoom}&pass=${urlPass}</a>`;
+     linkDisplay.innerHTML = `Share link: <a href="${window.location.origin}/msgapp/?room=${urlRoom}&pass=${urlPass}" target="_blank" style="color:#0d6efd;">${window.location.origin}/msgapp/?room=${urlRoom}&pass=${urlPass}</a>`;
+
       enterChat();
     }
   });
@@ -151,3 +154,4 @@ function listenMessages(){
     messagesDiv.scrollTop=messagesDiv.scrollHeight;
   });
 }
+
