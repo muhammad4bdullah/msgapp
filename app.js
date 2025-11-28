@@ -50,44 +50,67 @@ function randomString(len = 6){
   return str;
 }
 
+// 1️⃣ Function to update shareable link
 function updateRoomLink(roomId, password){
-    // Get base path including directory
     const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
     const link = `${base}?room=${roomId}&pass=${password}`;
     linkDisplay.innerHTML = `Share link: <a href="${link}" target="_blank" style="color:#0d6efd;">${link}</a>`;
 }
 
-
-// === Google Login ===
+// 2️⃣ Google Login Button
 googleLoginBtn.onclick = async () => {
   const provider = new GoogleAuthProvider();
   const result = await signInWithPopup(auth, provider);
   currentUser = result.user;
 
-  // Show main app after login
   loginOverlay.style.display = 'none';
   document.querySelector('.app-grid').classList.remove('hidden');
 
   await loadProfile();
   loadUserChats();
+
+  // Optional: auto-join URL after login
+  joinRoomFromURL();
 };
 
-
+// 3️⃣ Auth State Changed
 onAuthStateChanged(auth, async (user) => {
   if(user){
     currentUser = user;
 
-    // Show main app when user is logged in
     loginOverlay.style.display = 'none';
     document.querySelector('.app-grid').classList.remove('hidden');
 
     await loadProfile();
     loadUserChats();
+
+    // ✅ Auto-join chat if URL has room/pass
+    joinRoomFromURL();
   } else {
     loginOverlay.style.display = 'flex';
-    document.querySelector('.app-grid').classList.add('hidden'); // Hide app if not logged in
+    document.querySelector('.app-grid').classList.add('hidden');
   }
 });
+
+// 4️⃣ Function to auto-join room from URL
+function joinRoomFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('room');
+    const password = params.get('pass');
+    if (!roomId || !password) return;
+
+    getDoc(doc(db,"rooms",roomId)).then(roomDoc => {
+        if(!roomDoc.exists()) return alert("Room does not exist");
+        if(roomDoc.data().password !== password) return alert("Incorrect password");
+
+        currentRoomId = roomId;
+        roomIdDisplay.textContent = `Room ID: ${roomId}`;
+        roomPassDisplay.textContent = `Password: ${password}`;
+        updateRoomLink(roomId, password);
+        listenMessages();
+    });
+}
+
 
 
 // === Profile Modal ===
@@ -235,5 +258,6 @@ function loadUserChats(){
 function renderLeftChats(){
   // Placeholder: implement chat list dynamically if needed
 }
+
 
 
