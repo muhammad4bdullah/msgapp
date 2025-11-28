@@ -2,83 +2,104 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100vh;
+  font-family: Arial, sans-serif;
   background: #121212;
   color: #fff;
-  font-family: Arial;
 }
 
-/* TOP BAR */
+/* Top Buttons */
 #top-buttons {
   display: flex;
-  align-items: center;
   justify-content: center;
-  background: #14142b;
+  gap: 1vw;
   padding: 1vh;
+  background: #14142b;
   position: relative;
+  z-index: 100;
 }
+
 #top-buttons button {
-  padding: 1vh 1vw;
-  margin: 0 0.5vw;
+  padding: 1.2vh 1.5vw;
   border: none;
-  font-weight: bold;
   border-radius: 0.5vw;
   cursor: pointer;
-  background: #0d6efd;
-  color: white;
+  font-weight: bold;
+  font-size: 1.1vw;
 }
+
+#create-chat { background: #0d6efd; color: #fff; }
+#join-chat { background: #198754; color: #fff; }
 #profile-btn {
   position: absolute;
   right: 2vw;
-}
-#hamburger-btn {
-  position: absolute;
-  left: 2vw;
-  display: none; /* hidden on desktop */
+  top: 1vh;
+  padding: 1vh 1vw;
+  font-size: 1vw;
 }
 
-/* MAIN LAYOUT */
+/* Main layout */
 #container {
   display: flex;
   height: calc(100vh - 6vh);
 }
 
-/* LEFT PANEL (DESKTOP ONLY) */
+/* Left panel */
 #room-panel {
-  width: 22vw;
-  padding: 2vh 1vw;
+  width: 20vw;
   background: #14142b;
+  padding: 2vh 1.5vw;
+  box-sizing: border-box;
 }
 
-/* CHAT PANEL */
+#room-panel h3 { margin-top: 0; font-size: 1.4vw; }
+#room-panel p { margin: 1vh 0; font-size: 1.1vw; }
+#join-section input {
+  width: 100%;
+  padding: 1vh;
+  margin-bottom: 1vh;
+  border-radius: 0.5vw;
+  border: none;
+  font-size: 1vw;
+}
+#join-section { display: none; }
+
+/* Chat panel */
 #chat-panel {
   flex: 1;
-  background: #1e1e2f;
   display: flex;
   flex-direction: column;
+  background: #1e1e2f;
 }
 
 #messages {
   flex: 1;
-  padding: 2vh 2vw;
   overflow-y: auto;
+  padding: 2vh 2vw;
+  background: #121226;
 }
 
-/* BUBBLES */
+/* Message bubbles */
 .message {
-  max-width: 65%;
-  padding: 1vh 1vw;
+  max-width: 60%;
+  padding: 1.2vh 1.2vw;
+  border-radius: 2vw;
   margin-bottom: 1.5vh;
-  border-radius: 1vw;
+  word-wrap: break-word;
+  display: flex;
+  flex-direction: column;
   font-size: 1vw;
 }
-.my-msg { background: #0d6efd; margin-left: auto; }
-.other-msg { background: #333; margin-right: auto; }
 
+.my-msg { background-color: #0d6efd; margin-left: auto; }
+.other-msg { background-color: #2a2a3e; margin-right: auto; }
+
+/* Message info */
 .msg-info {
   display: flex;
   align-items: center;
-  margin-bottom: 3px;
+  margin-bottom: 0.3vh;
 }
+
 .msg-info img {
   width: 2vw;
   height: 2vw;
@@ -86,75 +107,89 @@ html, body {
   margin-right: 0.5vw;
 }
 
-/* INPUT SECTION */
+.msg-info span {
+  font-size: 0.9vw;
+  color: #ccc;
+}
+
+/* Input section */
 #input-section {
   display: flex;
-  padding: 1vh;
+  padding: 1.5vh 1vw;
+  gap: 1vw;
   background: #14142b;
 }
+
 #message-input {
   flex: 1;
-  padding: 1vh;
+  padding: 1.2vh 1vw;
+  border-radius: 0.5vw;
+  border: none;
+  font-size: 1.1vw;
 }
 
-/* MOBILE MENU */
-#mobile-menu {
+#send {
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  padding: 1.2vh 1.1vw;
+  border-radius: 0.5vw;
+  cursor: pointer;
+  font-size: 1vw;
+}
+
+/* Profile Modal */
+#profile-modal {
+  display: none;
   position: fixed;
   top: 0;
-  left: -75vw;
-  width: 70vw;
-  height: 100vh;
-  background: #14142b;
-  padding: 4vh 4vw;
-  box-shadow: 3vw 0 5vw rgba(0,0,0,0.5);
-  transition: left 0.3s ease;
-  z-index: 200;
-}
-#mobile-menu.open {
   left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
 }
-#close-menu {
-  background: crimson;
-  color: white;
+
+#profile-modal div {
+  background: #1e1e2f;
+  padding: 2vh 2vw;
+  border-radius: 1vw;
+  width: 30vw;
+}
+
+#profile-modal input {
+  width: 100%;
+  padding: 1vh;
+  margin-bottom: 1vh;
+  font-size: 1vw;
+}
+
+#profile-modal button {
+  width: 100%;
+  padding: 1vh;
+  background: #0d6efd;
+  color: #fff;
   border: none;
-  padding: 1vh 2vw;
-  border-radius: 2vw;
-  margin-bottom: 2vh;
+  border-radius: 0.4vw;
+  cursor: pointer;
+  font-size: 1.1vw;
 }
 
-/* -----------------------------
-   MOBILE VIEW
-   ----------------------------- */
+/* MOBILE VIEW — stacked vertically */
 @media (max-width: 768px) {
-
-  /* SHOW HAMBURGER */
-  #hamburger-btn {
-    display: block;
-  }
-
-  /* HIDE DESKTOP BUTTONS */
-  #create-chat,
-  #join-chat {
-    display: none;
-  }
-
-  /* HIDE LEFT PANEL */
-  #room-panel {
-    display: none;
-  }
-
-  /* CHAT FULL SCREEN */
-  #chat-panel {
-    width: 100vw;
-  }
-
-  /* Bigger messages */
-  .message {
-    font-size: 4vw;
-    border-radius: 4vw;
-  }
-  .msg-info img {
-    width: 9vw;
-    height: 9vw;
-  }
+  #container { flex-direction: column; height: 100vh; }
+  #room-panel { display: block; width: 100vw; padding: 2vh 3vw; }
+  #top-buttons { flex-wrap: wrap; gap: 2vw; padding: 1.5vh 2vw; }
+  #top-buttons button { font-size: 3.5vw; padding: 1.2vh 2vw; border-radius: 2vw; }
+  #profile-btn { font-size: 3.5vw; right: 3vw; top: 1vh; }
+  #chat-panel { width: 100vw; height: calc(100vh - 7vh); }
+  #messages { padding: 2vh 3vw; }
+  .message { max-width: 85%; font-size: 3.5vw; padding: 1.5vh 3vw; border-radius: 5vw; }
+  .msg-info span { font-size: 3vw; }
+  .msg-info img { width: 6vw; height: 6vw; }
+  #input-section { padding: 1vh 2vw; gap: 2vw; }
+  #message-input { font-size: 3.5vw; padding: 1.5vh 3vw; border-radius: 3vw; }
+  #send { font-size: 3.5vw; padding: 1.2vh 3vw; border-radius: 3vw; }
+  #profile-modal div { width: 80vw; }
 }
