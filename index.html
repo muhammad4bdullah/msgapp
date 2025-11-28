@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Link Chat App</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Link Chat App</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
       </div>
     </div>
 
+    <!-- Chat Controls -->
     <div class="room-controls">
       <button id="create-chat">Create Chat</button>
       <input type="text" id="room-id" placeholder="Room ID">
@@ -45,7 +46,7 @@
     <div class="left-footer"><p id="chats-left"></p></div>
   </div>
 
-  <!-- Main Chat Column -->
+  <!-- Main Chat Area -->
   <div class="main-col">
     <div class="topbar">
       <div class="top-left">
@@ -53,7 +54,7 @@
       </div>
       <div class="top-right">
         <div class="profile-btn" id="profile-btn">
-          <img src="" class="avatar" id="profile-avatar" alt="Avatar">
+          <img src="" class="avatar" id="profile-avatar">
         </div>
       </div>
     </div>
@@ -63,7 +64,7 @@
         <div class="messages" id="messages"></div>
       </div>
       <div class="composer">
-        <input type="text" id="message-input" placeholder="Type a message...">
+        <input type="text" id="message-input" placeholder="Type a message">
         <button id="send">Send</button>
       </div>
     </div>
