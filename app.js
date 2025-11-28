@@ -64,7 +64,7 @@ createBtn.onclick = async ()=>{
   await setDoc(doc(db,"rooms",roomId),{password});
   roomIdDisplay.textContent=`Room ID: ${roomId}`;
   roomPassDisplay.textContent=`Password: ${password}`;
-  const link = `${window.location.origin}/msgapp/?room=${roomId}&pass=${password}`;
+  const link = `${window.location.origin}?room=${roomId}&pass=${password}`;
   linkDisplay.innerHTML=`Share link: <a href="${link}" target="_blank" style="color:#0d6efd;">${link}</a>`;
   enterChat();
 }
@@ -81,27 +81,25 @@ joinRoomBtn.onclick = async ()=>{
   currentRoomId=roomId;
   roomIdDisplay.textContent=`Room ID: ${roomId}`;
   roomPassDisplay.textContent=`Password: ${password}`;
-  linkDisplay.innerHTML = `Share link: <a href="${window.location.origin}/msgapp/?room=${roomId}&pass=${password}" target="_blank" style="color:#0d6efd;">${window.location.origin}/msgapp/?room=${roomId}&pass=${password}</a>`;
+  linkDisplay.innerHTML=`Share link: <a href="${window.location.origin}?room=${roomId}&pass=${password}" target="_blank" style="color:#0d6efd;">${window.location.origin}?room=${roomId}&pass=${password}</a>`;
+  enterChat();
 }
 
-// AUTO JOIN
-window.addEventListener("load", async ()=>{
-  const params = new URLSearchParams(window.location.search);
-  const urlRoom = params.get("room");
-  const urlPass = params.get("pass");
-  if(!urlRoom || !urlPass) return;
-  try{
-    const roomRef = doc(db,"rooms",urlRoom);
-    const roomDoc = await getDoc(roomRef);
-    if(!roomDoc.exists()){ alert("Room does not exist anymore."); return; }
-    if(roomDoc.data().password !== urlPass){ alert("Incorrect password from link."); return; }
-    currentRoomId=urlRoom;
-    roomIdDisplay.textContent=`Room ID: ${urlRoom}`;
-    roomPassDisplay.textContent=`Password: ${urlPass}`;
-    linkDisplay.innerHTML=`Share link: <a href="${window.location.origin}/msgapp/?room=${urlRoom}&pass=${urlPass}" target="_blank" style="color:#0d6efd;">${window.location.origin}/msgapp/?room=${urlRoom}&pass=${urlPass}</a>`;
-    enterChat();
-  }catch(err){ console.error("Auto join failed:", err); }
-});
+// Auto join via URL
+const params = new URLSearchParams(window.location.search);
+const urlRoom = params.get('room');
+const urlPass = params.get('pass');
+if(urlRoom && urlPass){
+  getDoc(doc(db,"rooms",urlRoom)).then(roomDoc=>{
+    if(roomDoc.exists() && roomDoc.data().password===urlPass){
+      currentRoomId=urlRoom;
+      roomIdDisplay.textContent=`Room ID: ${urlRoom}`;
+      roomPassDisplay.textContent=`Password: ${urlPass}`;
+      linkDisplay.innerHTML=`Share link: <a href="${window.location.origin}?room=${urlRoom}&pass=${urlPass}" target="_blank" style="color:#0d6efd;">${window.location.origin}?room=${urlRoom}&pass=${urlPass}</a>`;
+      enterChat();
+    }
+  });
+}
 
 // Enter chat
 function enterChat(){ listenMessages(); }
@@ -111,7 +109,11 @@ sendBtn.onclick=async()=>{
   const text=messageInput.value.trim();
   if(!text||!currentRoomId)return;
   await addDoc(collection(db,"rooms",currentRoomId,"messages"),{
-    text, userId, timestamp:new Date(), nickname, avatarUrl
+    text,
+    userId,
+    timestamp:new Date(),
+    nickname,
+    avatarUrl
   });
   messageInput.value='';
 }
@@ -121,26 +123,31 @@ function listenMessages(){
   const msgsCol = collection(db,"rooms",currentRoomId,"messages");
   onSnapshot(msgsCol,snapshot=>{
     messagesDiv.innerHTML='';
-    snapshot.docs.sort((a,b)=>a.data().timestamp - b.data().timestamp).forEach(doc=>{
-      const msg=doc.data();
-      const div=document.createElement('div');
+    snapshot.docs
+      .sort((a,b)=>a.data().timestamp - b.data().timestamp)
+      .forEach(doc=>{
+        const msg = doc.data();
+        const div = document.createElement('div');
 
-      // Info
-      const infoDiv=document.createElement('div');
-      infoDiv.classList.add('msg-info');
-      if(msg.avatarUrl){ const img=document.createElement('img'); img.src=msg.avatarUrl; infoDiv.appendChild(img); }
-      const nameSpan=document.createElement('span'); nameSpan.textContent=msg.nickname||'Anonymous';
-      infoDiv.appendChild(nameSpan);
+        // Info
+        const infoDiv = document.createElement('div');
+        infoDiv.classList.add('msg-info');
+        if(msg.avatarUrl){
+          const img = document.createElement('img'); img.src=msg.avatarUrl;
+          infoDiv.appendChild(img);
+        }
+        const nameSpan = document.createElement('span'); nameSpan.textContent=msg.nickname||'Anonymous';
+        infoDiv.appendChild(nameSpan);
 
-      // Message
-      const msgDiv=document.createElement('div');
-      msgDiv.classList.add('message'); msgDiv.classList.add(msg.userId===userId?'my-msg':'other-msg');
-      msgDiv.textContent=msg.text;
+        // Message
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message'); msgDiv.classList.add(msg.userId===userId?'my-msg':'other-msg');
+        msgDiv.textContent=msg.text;
 
-      div.appendChild(infoDiv);
-      div.appendChild(msgDiv);
-      messagesDiv.appendChild(div);
-    });
+        div.appendChild(infoDiv);
+        div.appendChild(msgDiv);
+        messagesDiv.appendChild(div);
+      });
     messagesDiv.scrollTop=messagesDiv.scrollHeight;
   });
 }
