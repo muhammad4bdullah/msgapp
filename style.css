@@ -27,6 +27,16 @@ html, body {
   font-size: 1.1vw;
 }
 
+/* Hide hamburger on desktop */
+#hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2vw;
+  cursor: pointer;
+}
+
 #create-chat {
   background: #0d6efd;
   color: #fff;
@@ -119,7 +129,6 @@ html, body {
   margin-right: auto;
 }
 
-/* Message info */
 .msg-info {
   display: flex;
   align-items: center;
@@ -207,49 +216,43 @@ html, body {
    -------------------------------------------------- */
 @media (max-width: 768px) {
 
-  /* Whole layout becomes vertical */
+  #hamburger-btn {
+    display: block;
+    position: absolute;
+    left: 2vw;
+    top: 1vh;
+    font-size: 7vw;
+  }
+
   #container {
     flex-direction: column;
     height: 100vh;
   }
 
-  /* Hide left sidebar (Room Panel) like WhatsApp */
   #room-panel {
     display: none;
-    width: 100vw;
-    height: auto;
-    padding: 2vh 3vw;
   }
 
-  /* Top buttons */
   #top-buttons {
-    gap: 2vw;
+    gap: 3vw;
     padding: 1.5vh 2vw;
   }
 
   #top-buttons button {
-    font-size: 3.5vw;
-    padding: 1.2vh 2vw;
+    font-size: 4vw;
+    padding: 1.2vh 3vw;
     border-radius: 2vw;
   }
 
   #profile-btn {
-    right: 3vw;
-    top: 1vh;
-    font-size: 3.5vw;
+    font-size: 4vw;
   }
 
-  /* Chat panel takes full screen */
   #chat-panel {
     width: 100vw;
     height: calc(100vh - 7vh);
   }
 
-  #messages {
-    padding: 2vh 3vw;
-  }
-
-  /* Messages */
   .message {
     max-width: 85%;
     font-size: 3.5vw;
@@ -257,53 +260,12 @@ html, body {
     border-radius: 5vw;
   }
 
-  .msg-info span {
-    font-size: 3vw;
-  }
-
   .msg-info img {
     width: 6vw;
     height: 6vw;
   }
 
-  /* Input section */
-  #input-section {
-    padding: 1vh 2vw;
-    gap: 2vw;
-  }
-
-  #message-input {
-    font-size: 3.5vw;
-    padding: 1.5vh 3vw;
-    border-radius: 3vw;
-  }
-
-  #send {
-    font-size: 3.5vw;
-    padding: 1.2vh 3vw;
-    border-radius: 3vw;
-  }
-
-  /* Profile modal phone layout */
-  #profile-modal div {
-    width: 80vw;
-  }
-
-  /* ✔ FIXED — Show hamburger button */
-  #hamburger-btn {
-    display: block;
-    position: absolute;
-    left: 2vw;
-    top: 1vh;
-    font-size: 5vw;
-    background: transparent;
-    border: none;
-    color: white;
-    cursor: pointer;
-    z-index: 300;
-  }
-
-  /* Slide-in mobile menu */
+  /* MOBILE SLIDE MENU */
   #mobile-menu {
     position: fixed;
     top: 0;
@@ -311,7 +273,7 @@ html, body {
     width: 70vw;
     height: 100vh;
     background: #14142b;
-    padding: 4vh 4vw;
+    padding: 5vh 4vw;
     box-shadow: 2vw 0 5vw rgba(0,0,0,0.5);
     transition: left 0.3s ease;
     z-index: 200;
@@ -321,30 +283,18 @@ html, body {
     left: 0;
   }
 
+  #mobile-menu input,
+  #mobile-menu button {
+    font-size: 4vw;
+    padding: 2vh;
+    border-radius: 2vw;
+  }
+
   #mobile-menu h3 {
     font-size: 5vw;
-    margin-bottom: 3vh;
   }
 
-  #mobile-menu input {
-    width: 100%;
-    padding: 1.5vh;
-    margin-bottom: 2vh;
-    font-size: 4vw;
-    border-radius: 2vw;
-    border: none;
-  }
-
-  #mobile-menu button {
-    width: 100%;
-    padding: 1.5vh;
-    margin-bottom: 2vh;
-    font-size: 4vw;
-    background: #0d6efd;
-    color: white;
-    border: none;
-    border-radius: 2vw;
-    cursor: pointer;
+  #profile-modal div {
+    width: 80vw;
   }
 }
-
