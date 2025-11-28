@@ -85,21 +85,46 @@ joinRoomBtn.onclick = async ()=>{
   enterChat();
 }
 
-// Auto join via URL
-const params = new URLSearchParams(window.location.search);
-const urlRoom = params.get('room');
-const urlPass = params.get('pass');
-if(urlRoom && urlPass){
-  getDoc(doc(db,"rooms",urlRoom)).then(roomDoc=>{
-    if(roomDoc.exists() && roomDoc.data().password===urlPass){
-      currentRoomId=urlRoom;
-      roomIdDisplay.textContent=`Room ID: ${urlRoom}`;
-      roomPassDisplay.textContent=`Password: ${urlPass}`;
-      linkDisplay.innerHTML=`Share link: <a href="${window.location.origin}?room=${urlRoom}&pass=${urlPass}" target="_blank" style="color:#0d6efd;">${window.location.origin}?room=${urlRoom}&pass=${urlPass}</a>`;
-      enterChat();
+// AUTO JOIN (SAFE + FIXED VERSION)
+window.addEventListener("load", async () => {
+  const params = new URLSearchParams(window.location.search);
+  const urlRoom = params.get("room");
+  const urlPass = params.get("pass");
+
+  // No link provided
+  if (!urlRoom || !urlPass) return;
+
+  try {
+    const roomRef = doc(db, "rooms", urlRoom);
+    const roomDoc = await getDoc(roomRef);
+
+    // Room not found
+    if (!roomDoc.exists()) {
+      alert("Room does not exist anymore.");
+      return;
     }
-  });
-}
+
+    // Wrong password
+    if (roomDoc.data().password !== urlPass) {
+      alert("Incorrect password from link.");
+      return;
+    }
+
+    // JOIN SUCCESS
+    currentRoomId = urlRoom;
+
+    roomIdDisplay.textContent = `Room ID: ${urlRoom}`;
+    roomPassDisplay.textContent = `Password: ${urlPass}`;
+    linkDisplay.innerHTML =
+      `Share link: <a href="${window.location.origin}?room=${urlRoom}&pass=${urlPass}" target="_blank" style="color:#0d6efd;">${window.location.origin}?room=${urlRoom}&pass=${urlPass}</a>`;
+
+    enterChat();
+
+  } catch (err) {
+    console.error("Auto join failed:", err);
+  }
+});
+
 
 
 // Enter chat
@@ -152,4 +177,5 @@ function listenMessages(){
     messagesDiv.scrollTop=messagesDiv.scrollHeight;
   });
 }
+
 
