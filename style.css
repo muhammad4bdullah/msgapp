@@ -27,39 +27,13 @@ html, body {
   font-size: 1.1vw;
 }
 
-/* Hide hamburger on desktop */
-#hamburger-btn {
-  display: none;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 2vw;
-  cursor: pointer;
-}
-
-#create-chat {
-  background: #0d6efd;
-  color: #fff;
-}
-
-#join-chat {
-  background: #198754;
-  color: #fff;
-}
-
-#profile-btn {
-  position: absolute;
-  right: 2vw;
-  top: 1vh;
-  padding: 1vh 1vw;
-  font-size: 1vw;
-}
+#create-chat { background: #0d6efd; color: #fff; }
+#join-chat { background: #198754; color: #fff; }
+#profile-btn { position: absolute; right: 2vw; top: 1vh; padding: 1vh 1vw; font-size: 1vw; }
+#hamburger-btn { display: none; } /* shown in mobile only */
 
 /* Main layout */
-#container {
-  display: flex;
-  height: calc(100vh - 6vh); 
-}
+#container { display: flex; height: calc(100vh - 6vh); }
 
 /* Left panel */
 #room-panel {
@@ -69,16 +43,8 @@ html, body {
   box-sizing: border-box;
 }
 
-#room-panel h3 {
-  margin-top: 0;
-  font-size: 1.4vw;
-}
-
-#room-panel p {
-  margin: 1vh 0;
-  font-size: 1.1vw;
-}
-
+#room-panel h3 { margin-top: 0; font-size: 1.4vw; }
+#room-panel p { margin: 1vh 0; font-size: 1.1vw; }
 #join-section input {
   width: 100%;
   padding: 1vh;
@@ -87,10 +53,7 @@ html, body {
   border: none;
   font-size: 1vw;
 }
-
-#join-section {
-  display: none;
-}
+#join-section { display: none; }
 
 /* Chat panel */
 #chat-panel {
@@ -118,34 +81,17 @@ html, body {
   flex-direction: column;
   font-size: 1vw;
 }
+.my-msg { background-color: #0d6efd; margin-left: auto; }
+.other-msg { background-color: #2a2a3e; margin-right: auto; }
 
-.my-msg {
-  background-color: #0d6efd;
-  margin-left: auto;
-}
-
-.other-msg {
-  background-color: #2a2a3e;
-  margin-right: auto;
-}
-
+/* Message info */
 .msg-info {
   display: flex;
   align-items: center;
   margin-bottom: 0.3vh;
 }
-
-.msg-info img {
-  width: 2vw;
-  height: 2vw;
-  border-radius: 50%;
-  margin-right: 0.5vw;
-}
-
-.msg-info span {
-  font-size: 0.9vw;
-  color: #ccc;
-}
+.msg-info img { width: 2vw; height: 2vw; border-radius: 50%; margin-right: 0.5vw; }
+.msg-info span { font-size: 0.9vw; color: #ccc; }
 
 /* Input section */
 #input-section {
@@ -154,7 +100,6 @@ html, body {
   gap: 1vw;
   background: #14142b;
 }
-
 #message-input {
   flex: 1;
   padding: 1.2vh 1vw;
@@ -162,7 +107,6 @@ html, body {
   border: none;
   font-size: 1.1vw;
 }
-
 #send {
   background: #0d6efd;
   color: #fff;
@@ -177,95 +121,61 @@ html, body {
 #profile-modal {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
   background: rgba(0,0,0,0.6);
   justify-content: center;
   align-items: center;
 }
-
 #profile-modal div {
   background: #1e1e2f;
   padding: 2vh 2vw;
   border-radius: 1vw;
   width: 30vw;
 }
-
-#profile-modal input {
-  width: 100%;
-  padding: 1vh;
-  margin-bottom: 1vh;
-  font-size: 1vw;
-}
-
-#profile-modal button {
-  width: 100%;
-  padding: 1vh;
-  background: #0d6efd;
-  color: #fff;
-  border: none;
-  border-radius: 0.4vw;
-  cursor: pointer;
-  font-size: 1.1vw;
-}
+#profile-modal input { width: 100%; padding: 1vh; margin-bottom: 1vh; font-size: 1vw; }
+#profile-modal button { width: 100%; padding: 1vh; background: #0d6efd; color: #fff; border: none; border-radius: 0.4vw; cursor: pointer; font-size: 1.1vw; }
 
 /* --------------------------------------------------
-   MOBILE VIEW (WhatsApp-like)
+   MOBILE VIEW
    -------------------------------------------------- */
 @media (max-width: 768px) {
 
+  #container { flex-direction: column; height: 100vh; }
+  #room-panel { display: none; width: 100vw; height: auto; padding: 2vh 3vw; }
+
+  #top-buttons { gap: 2vw; padding: 1.5vh 2vw; }
+  #top-buttons button { font-size: 3.5vw; padding: 1.2vh 2vw; border-radius: 2vw; }
+  #profile-btn { right: 3vw; top: 1vh; font-size: 3.5vw; }
+
+  #chat-panel { width: 100vw; height: calc(100vh - 7vh); }
+  #messages { padding: 2vh 3vw; }
+
+  .message { max-width: 85%; font-size: 3.5vw; padding: 1.5vh 3vw; border-radius: 5vw; }
+  .msg-info span { font-size: 3vw; }
+  .msg-info img { width: 6vw; height: 6vw; }
+
+  #input-section { padding: 1vh 2vw; gap: 2vw; }
+  #message-input { font-size: 3.5vw; padding: 1.5vh 3vw; border-radius: 3vw; }
+  #send { font-size: 3.5vw; padding: 1.2vh 3vw; border-radius: 3vw; }
+
+  #profile-modal div { width: 80vw; }
+
+  /* Hamburger button */
   #hamburger-btn {
     display: block;
     position: absolute;
     left: 2vw;
     top: 1vh;
-    font-size: 7vw;
+    font-size: 5vw;
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    z-index: 300;
   }
 
-  #container {
-    flex-direction: column;
-    height: 100vh;
-  }
-
-  #room-panel {
-    display: none;
-  }
-
-  #top-buttons {
-    gap: 3vw;
-    padding: 1.5vh 2vw;
-  }
-
-  #top-buttons button {
-    font-size: 4vw;
-    padding: 1.2vh 3vw;
-    border-radius: 2vw;
-  }
-
-  #profile-btn {
-    font-size: 4vw;
-  }
-
-  #chat-panel {
-    width: 100vw;
-    height: calc(100vh - 7vh);
-  }
-
-  .message {
-    max-width: 85%;
-    font-size: 3.5vw;
-    padding: 1.5vh 3vw;
-    border-radius: 5vw;
-  }
-
-  .msg-info img {
-    width: 6vw;
-    height: 6vw;
-  }
-
-  /* MOBILE SLIDE MENU */
+  /* Mobile menu */
   #mobile-menu {
     position: fixed;
     top: 0;
@@ -273,28 +183,13 @@ html, body {
     width: 70vw;
     height: 100vh;
     background: #14142b;
-    padding: 5vh 4vw;
+    padding: 4vh 4vw;
     box-shadow: 2vw 0 5vw rgba(0,0,0,0.5);
     transition: left 0.3s ease;
     z-index: 200;
   }
-
-  #mobile-menu.open {
-    left: 0;
-  }
-
-  #mobile-menu input,
-  #mobile-menu button {
-    font-size: 4vw;
-    padding: 2vh;
-    border-radius: 2vw;
-  }
-
-  #mobile-menu h3 {
-    font-size: 5vw;
-  }
-
-  #profile-modal div {
-    width: 80vw;
-  }
+  #mobile-menu.open { left: 0; }
+  #mobile-menu h3 { font-size: 5vw; margin-bottom: 3vh; }
+  #mobile-menu input { width: 100%; padding: 1.5vh; margin-bottom: 2vh; font-size: 4vw; border-radius: 2vw; border: none; }
+  #mobile-menu button { width: 100%; padding: 1.5vh; margin-bottom: 2vh; font-size: 4vw; background: #0d6efd; color: white; border: none; border-radius: 2vw; cursor: pointer; }
 }
