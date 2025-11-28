@@ -89,32 +89,31 @@ html, body { height:100%; background: var(--bg); color: var(--text); }
 
 /* === Chat Area === */
 .chat-area { 
-  display:flex; flex-direction:column; flex:1; min-height:0; /* important for flex scroll */
-  padding:12px; background: rgba(255,255,255,0.01); border-radius:12px;
+  display:flex; flex-direction:column; flex:1; min-height:0; padding:12px;
+  background: rgba(255,255,255,0.01); border-radius:12px;
 }
 
-/* Messages scroll inside chat area */
+/* Messages container */
 .messages-wrap {
-  flex:1; 
-  overflow-y:auto; 
-  display:flex; flex-direction:column; gap:10px; 
-  padding-right:4px; /* leave space for scrollbar */
+  flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:4px;
 }
 
-/* Messages */
-.message { 
-  max-width:78%; padding:12px; border-radius:14px; word-break:break-word; 
-  display:flex; flex-direction:column;
+/* Messages stacked using flexbox (no margin) */
+.messages {
+  display:flex; flex-direction:column; gap:10px; flex-shrink:0;
 }
-.message.mine { margin-left:auto; background: rgba(59,130,246,0.25); text-align:right; }
-.message.theirs { margin-right:auto; background: rgba(255,255,255,0.02); text-align:left; }
-.msg-info { display:flex; align-items:center; margin-bottom:4px; }
+.message {
+  max-width:78%; padding:12px; border-radius:14px; word-break:break-word; display:flex; flex-direction:column; margin:0;
+}
+.message.mine { align-self:flex-end; background: rgba(59,130,246,0.25); text-align:right; }
+.message.theirs { align-self:flex-start; background: rgba(255,255,255,0.02); text-align:left; }
+.msg-info { display:flex; align-items:center; margin-bottom:0; }
 .msg-info img { width:24px; height:24px; border-radius:50%; margin-right:6px; }
 .msg-info span { font-size:12px; color: var(--subtle); }
 .msg-text { font-size:15px; line-height:1.4; color: var(--text); }
 
-/* Composer (input at bottom) */
-.composer { display:flex; gap:8px; align-items:center; padding:8px; border-radius:12px; background: var(--soft); }
+/* Composer (pinned at bottom) */
+.composer { display:flex; gap:8px; align-items:center; padding:8px; border-radius:12px; background: var(--soft); flex-shrink:0; }
 .composer input { flex:1; padding:12px; border-radius:10px; border:none; background:transparent; color:var(--text); font-size:15px; }
 .composer button { padding:10px 16px; border-radius:10px; border:none; background: var(--primary); color:#fff; cursor:pointer; font-weight:600; }
 
