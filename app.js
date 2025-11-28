@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getFirestore, doc, setDoc, addDoc, collection, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-// === Firebase Config ===
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "...",
   authDomain: "...",
@@ -11,12 +11,11 @@ const firebaseConfig = {
   messagingSenderId: "...",
   appId: "..."
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// === DOM Elements ===
+// --- DOM Elements ---
 const loginOverlay = document.getElementById('login-overlay');
 const googleLoginBtn = document.getElementById('google-login-btn');
 const profileBtn = document.getElementById('profile-btn');
@@ -43,7 +42,7 @@ let currentRoomId = '';
 let chatsToday = 0;
 const MAX_CHATS_PER_DAY = 10;
 
-// === Helpers ===
+// --- Helpers ---
 function randomString(len=6){
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let str = '';
@@ -57,27 +56,29 @@ function updateRoomLink(roomId, password){
   linkDisplay.innerHTML = `Share link: <a href="${link}" target="_blank" style="color:#0d6efd;">${link}</a>`;
 }
 
-// === Google Login ===
+// --- Google Login ---
 googleLoginBtn.onclick = async () => {
   const provider = new GoogleAuthProvider();
-  const result = await signInWithPopup(auth, provider);
-  currentUser = result.user;
-
-  loginOverlay.style.display = 'none';
-  document.querySelector('.app-grid').classList.remove('hidden');
-
-  await loadProfile();
-  loadUserChats();
-  joinRoomFromURL();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    currentUser = result.user;
+    loginOverlay.style.display = 'none';
+    document.querySelector('.app-grid').classList.remove('hidden');
+    await loadProfile();
+    loadUserChats();
+    joinRoomFromURL();
+  } catch(e) {
+    alert("Login failed: " + e.message);
+    console.error(e);
+  }
 };
 
-// === Auth state ===
-onAuthStateChanged(auth, async (user) => {
+// --- Auth State ---
+onAuthStateChanged(auth, async (user)=>{
   if(user){
     currentUser = user;
     loginOverlay.style.display = 'none';
     document.querySelector('.app-grid').classList.remove('hidden');
-
     await loadProfile();
     loadUserChats();
     joinRoomFromURL();
@@ -87,14 +88,14 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// === Join room from URL ===
-function joinRoomFromURL() {
+// --- Join Room From URL ---
+function joinRoomFromURL(){
   const params = new URLSearchParams(window.location.search);
   const roomId = params.get('room');
   const password = params.get('pass');
   if(!roomId || !password) return;
 
-  getDoc(doc(db,"rooms",roomId)).then(roomDoc => {
+  getDoc(doc(db,"rooms",roomId)).then(roomDoc=>{
     if(!roomDoc.exists()) return alert("Room does not exist");
     if(roomDoc.data().password !== password) return alert("Incorrect password");
 
@@ -106,17 +107,17 @@ function joinRoomFromURL() {
   });
 }
 
-// === Profile Modal ===
-profileBtn.onclick = () => profileModal.classList.remove('hidden');
+// --- Profile Modal ---
+profileBtn.onclick = ()=>profileModal.classList.remove('hidden');
 
-saveProfileBtn.onclick = async () => {
+saveProfileBtn.onclick = async ()=>{
   const name = nicknameInput.value.trim();
   if(name) nickname = name;
 
   if(avatarInput.files[0]){
     avatarUrl = await new Promise(resolve=>{
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
+      reader.onload=()=>resolve(reader.result);
       reader.readAsDataURL(avatarInput.files[0]);
     });
   }
@@ -125,17 +126,15 @@ saveProfileBtn.onclick = async () => {
     nickname,
     avatarUrl,
     lastSet: Date.now()
-  }, {merge:true});
+  },{merge:true});
 
   profileModal.classList.add('hidden');
   updateProfileUI();
 };
 
-logoutBtn.onclick = async () => {
+logoutBtn.onclick = async ()=>{
   await signOut(auth);
-  currentUser=null;
-  nickname='';
-  avatarUrl='';
+  currentUser=null; nickname=''; avatarUrl='';
   loginOverlay.style.display='flex';
   profileModal.classList.add('hidden');
 };
@@ -144,57 +143,48 @@ function updateProfileUI(){
   document.getElementById('profile-avatar').src = avatarUrl || '';
 }
 
-// === Chat Create / Join ===
-document.getElementById('create-chat').onclick = async () => {
-  if(chatsToday >= MAX_CHATS_PER_DAY) return alert("Max chats today!");
-
+// --- Chat Create / Join ---
+document.getElementById('create-chat').onclick = async ()=>{
+  if(chatsToday>=MAX_CHATS_PER_DAY) return alert("Max chats today!");
   const roomId = randomString(8);
   const password = randomString(6);
-  currentRoomId = roomId;
-  chatsToday++;
+  currentRoomId = roomId; chatsToday++;
 
   await setDoc(doc(db,"rooms",roomId),{
-    password,
-    createdBy: currentUser.uid,
-    members: [nickname]
+    password, createdBy: currentUser.uid, members:[nickname]
   });
 
-  roomIdDisplay.textContent = `Room ID: ${roomId}`;
-  roomPassDisplay.textContent = `Password: ${password}`;
+  roomIdDisplay.textContent=`Room ID: ${roomId}`;
+  roomPassDisplay.textContent=`Password: ${password}`;
   updateRoomLink(roomId,password);
   listenMessages();
-  renderLeftChats();
 };
 
-document.getElementById('join-room').onclick = async () => {
+document.getElementById('join-room').onclick = async ()=>{
   const roomId = document.getElementById('room-id').value.trim();
   const password = document.getElementById('room-pass').value.trim();
-  if(!roomId || !password) return alert("Enter Room ID + Password");
+  if(!roomId||!password) return alert("Enter Room ID + Password");
 
   const roomDoc = await getDoc(doc(db,"rooms",roomId));
   if(!roomDoc.exists()) return alert("Room does not exist");
-  if(roomDoc.data().password !== password) return alert("Incorrect password");
+  if(roomDoc.data().password!==password) return alert("Incorrect password");
 
   currentRoomId = roomId;
-  roomIdDisplay.textContent = `Room ID: ${roomId}`;
-  roomPassDisplay.textContent = `Password: ${password}`;
+  roomIdDisplay.textContent=`Room ID: ${roomId}`;
+  roomPassDisplay.textContent=`Password: ${password}`;
   updateRoomLink(roomId,password);
   listenMessages();
 };
 
-// === Messaging ===
+// --- Messaging ---
 sendBtn.onclick = sendMessage;
-messageInput.addEventListener("keydown", e => { if(e.key==='Enter') sendMessage(); });
+messageInput.addEventListener("keydown", e=>{ if(e.key==='Enter') sendMessage(); });
 
 async function sendMessage(){
   const text = messageInput.value.trim();
-  if(!text || !currentRoomId) return;
+  if(!text||!currentRoomId) return;
   await addDoc(collection(db,"rooms",currentRoomId,"messages"),{
-    text,
-    userId: currentUser.uid,
-    nickname,
-    avatarUrl,
-    timestamp: Date.now()
+    text, userId: currentUser.uid, nickname, avatarUrl, timestamp: Date.now()
   });
   messageInput.value='';
 }
@@ -202,48 +192,41 @@ async function sendMessage(){
 function listenMessages(){
   if(!currentRoomId) return;
   const msgsCol = collection(db,"rooms",currentRoomId,"messages");
-  onSnapshot(msgsCol, snapshot => {
+  onSnapshot(msgsCol, snapshot=>{
     messagesDiv.innerHTML='';
-    snapshot.docs
-      .sort((a,b)=>a.data().timestamp - b.data().timestamp)
+    snapshot.docs.sort((a,b)=>a.data().timestamp - b.data().timestamp)
       .forEach(doc=>{
         const msg = doc.data();
-        const div = document.createElement('div');
+        const div=document.createElement('div');
         div.classList.add('message', msg.userId===currentUser.uid?'mine':'theirs');
 
-        const info = document.createElement('div'); info.classList.add('msg-info');
-        if(msg.avatarUrl){
-          const img = document.createElement('img'); img.src = msg.avatarUrl; info.appendChild(img);
-        }
-        const span = document.createElement('span'); span.textContent = msg.nickname; info.appendChild(span);
+        const info=document.createElement('div'); info.classList.add('msg-info');
+        if(msg.avatarUrl){ const img=document.createElement('img'); img.src=msg.avatarUrl; info.appendChild(img);}
+        const span=document.createElement('span'); span.textContent=msg.nickname; info.appendChild(span);
         div.appendChild(info);
 
-        const textDiv = document.createElement('div'); textDiv.classList.add('msg-text'); textDiv.textContent = msg.text;
+        const textDiv=document.createElement('div'); textDiv.classList.add('msg-text'); textDiv.textContent=msg.text;
         div.appendChild(textDiv);
-
         messagesDiv.appendChild(div);
       });
-    messagesDiv.scrollTo({ top: messagesDiv.scrollHeight, behavior: 'smooth' });
+    messagesDiv.scrollTo({top: messagesDiv.scrollHeight, behavior:'smooth'});
   });
 }
 
-// === Load Profile ===
+// --- Profile Load ---
 async function loadProfile(){
   const docSnap = await getDoc(doc(db,"users",currentUser.uid));
   if(docSnap.exists()){
-    const data = docSnap.data();
-    nickname = data.nickname || currentUser.displayName;
-    avatarUrl = data.avatarUrl || currentUser.photoURL;
+    const data=docSnap.data();
+    nickname=data.nickname||currentUser.displayName;
+    avatarUrl=data.avatarUrl||currentUser.photoURL;
   } else {
-    nickname = currentUser.displayName;
-    avatarUrl = currentUser.photoURL;
+    nickname=currentUser.displayName;
+    avatarUrl=currentUser.photoURL;
   }
-  nicknameInput.value = nickname;
+  nicknameInput.value=nickname;
   updateProfileUI();
 }
 
-// === Chats Left ===
-function loadUserChats(){
-  chatsLeftDisplay.textContent = `${MAX_CHATS_PER_DAY - chatsToday} chats left today`;
-}
-function renderLeftChats(){ leftChats.innerHTML=''; } // placeholder
+// --- Chats Left ---
+function loadUserChats(){ chatsLeftDisplay.textContent=`${MAX_CHATS_PER_DAY-chatsToday} chats left today`; }
