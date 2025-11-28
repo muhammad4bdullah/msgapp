@@ -181,5 +181,27 @@ function listenMessages(){
   });
 }
 
+const hamburger = document.getElementById("hamburger-btn");
+const mobileMenu = document.getElementById("mobile-menu");
+
+hamburger.addEventListener("click", () => {
+    mobileMenu.classList.toggle("open");
+});
+
+// Connect mobile join/create to your main code
+document.getElementById("mobile-join").onclick = () => {
+    document.getElementById("room-id").value =
+        document.getElementById("mobile-room-id").value;
+
+    document.getElementById("room-pass").value =
+        document.getElementById("mobile-room-pass").value;
+
+    document.getElementById("join-room").click();
+};
+
+document.getElementById("mobile-create").onclick = () => {
+    mobileMenu.classList.remove("open");
+    document.getElementById("create-chat").click();
+};
 
 
