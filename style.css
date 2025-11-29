@@ -1,4 +1,4 @@
-/* ==== THEME ==== */
+/* ==== THEME VARIABLES ==== */
 :root {
   --bg: #0d1117;
   --panel: #161b25;
@@ -11,24 +11,18 @@
   font-family: 'Inter', sans-serif;
 }
 
-
-
-
-
+/* ==== RESET ==== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-
 html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
 }
-
-/* ==== UTILITIES ==== */
 .hidden { display: none !important; }
 button { cursor: pointer; }
 
@@ -42,7 +36,6 @@ button { cursor: pointer; }
   background: rgba(0,0,0,0.85);
   z-index: 999;
 }
-
 .login-card {
   background: var(--panel);
   padding: 40px 30px;
@@ -50,7 +43,6 @@ button { cursor: pointer; }
   text-align: center;
   box-shadow: 0 8px 30px rgba(0,0,0,0.7);
 }
-
 #google-login-btn {
   padding: 14px 24px;
   border-radius: 12px;
@@ -61,10 +53,7 @@ button { cursor: pointer; }
   color: white;
   transition: 0.3s;
 }
-
-#google-login-btn:hover {
-  opacity: 0.9;
-}
+#google-login-btn:hover { opacity: 0.9; }
 
 /* ==== APP GRID ==== */
 .app-grid {
@@ -75,7 +64,7 @@ button { cursor: pointer; }
   padding: 10px;
 }
 
-/* ==== LEFT COLUMN ==== */
+/* ==== LEFT PANEL ==== */
 .left-col {
   background: var(--panel);
   border-radius: 16px;
@@ -84,35 +73,17 @@ button { cursor: pointer; }
   padding: 16px;
   gap: 12px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+  overflow: hidden;
 }
-
 .left-header .brand {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
-.logo {
-  font-size: 28px;
-}
-
-.brand-text .title {
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.brand-text .subtitle {
-  font-size: 13px;
-  color: var(--subtle);
-}
-
-.room-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-}
-
+.logo { font-size: 28px; }
+.brand-text .title { font-weight: 700; font-size: 18px; }
+.brand-text .subtitle { font-size: 13px; color: var(--subtle); }
+.room-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .room-controls input {
   padding: 10px;
   border-radius: 10px;
@@ -121,7 +92,6 @@ button { cursor: pointer; }
   background: rgba(255,255,255,0.05);
   color: var(--text);
 }
-
 .room-controls button {
   padding: 10px;
   border-radius: 10px;
@@ -130,14 +100,10 @@ button { cursor: pointer; }
   color: white;
   font-weight: 600;
 }
+.chats-list { flex: 1; overflow-y: auto; margin-top: 10px; }
+.left-footer { text-align: center; padding-top: 6px; font-size: 14px; color: var(--subtle); }
 
-.chats-list {
-  flex: 1;
-  overflow-y: auto;
-  margin-top: 10px;
-}
-
-/* ==== MAIN COLUMN ==== */
+/* ==== MAIN PANEL ==== */
 .main-col {
   display: flex;
   flex-direction: column;
@@ -154,13 +120,14 @@ button { cursor: pointer; }
   justify-content: space-between;
   align-items: center;
 }
-
 .topbar .avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
+  cursor: pointer;
 }
+.topbar button { background: var(--primary); color: #fff; border:none; padding:6px 12px; border-radius:8px; font-weight:600; }
 
 /* CHAT AREA */
 .chat-area {
@@ -171,20 +138,8 @@ button { cursor: pointer; }
   border-radius: 12px;
   min-height: 0;
 }
-
-/* MESSAGES */
-.messages-wrap {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  min-height: 0;
-}
-
-.messages {
-  display: flex;
-  flex-direction: column;
-  gap: 12px; /* perfect spacing between messages */
-}
+.messages-wrap { flex: 1; overflow-y: auto; padding: 16px; min-height:0; }
+.messages { display: flex; flex-direction: column; gap: 12px; }
 
 /* MESSAGE BUBBLES */
 .message {
@@ -195,14 +150,12 @@ button { cursor: pointer; }
   font-size: 15px;
   line-height: 1.4;
 }
-
 .message.mine {
   align-self: flex-end;
   background: rgba(59,130,246,0.25);
   color: var(--text);
   border-bottom-right-radius: 4px;
 }
-
 .message.theirs {
   align-self: flex-start;
   background: rgba(255,255,255,0.03);
@@ -211,144 +164,52 @@ button { cursor: pointer; }
 }
 
 /* MESSAGE INFO */
-.msg-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
+.msg-info { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.msg-info img { width:24px; height:24px; border-radius:50%; object-fit:cover; cursor:pointer; }
+.admin-name {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 10px; background: linear-gradient(135deg,#ffdd44,#ffcc00,#ffe680);
+  color:#2a1f00; font-weight:700; font-size:1rem; border-radius:12px;
+  border:1px solid rgba(255,215,0,0.9);
+  box-shadow:0 0 10px rgba(255,215,0,0.9),0 0 4px rgba(255,175,0,0.9),inset 0 0 5px rgba(255,255,255,0.4);
 }
-
-.msg-info img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-}
+.admin-crown { font-size:1.2rem; color:gold; filter:drop-shadow(0 0 3px gold); }
 
 /* COMPOSER */
-.composer {
-  padding: 10px;
-  display: flex;
-  gap: 10px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 12px;
-}
-
+.composer { padding:10px; display:flex; gap:10px; background: rgba(255,255,255,0.05); border-radius:12px; }
 .composer input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  padding: 12px;
-  color: var(--text);
-  font-size: 15px;
+  flex:1; background:transparent; border:none; outline:none;
+  padding:12px; color:var(--text); font-size:15px;
 }
-
 .composer button {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 10px;
-  background: var(--primary);
-  color: white;
-  font-weight: 600;
+  padding:12px 20px; border:none; border-radius:10px;
+  background:var(--primary); color:#fff; font-weight:600;
 }
 
 /* MODAL */
 .modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0,0,0,0.7);
-  z-index: 999;
+  position: fixed; inset:0;
+  display:flex; justify-content:center; align-items:center;
+  background:rgba(0,0,0,0.7); z-index:999;
 }
-
 .modal-card {
-  background: var(--panel);
-  padding: 30px;
-  border-radius: 16px;
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  background: var(--panel); padding:30px; border-radius:16px;
+  width: 360px; max-width:90%; display:flex; flex-direction:column; gap:12px;
 }
-
-.modal-card input {
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  outline: none;
-  background: rgba(255,255,255,0.05);
-  color: var(--text);
-}
-
-.profile-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.profile-actions button {
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  background: var(--primary);
-  color: white;
-  font-weight: 600;
-}
+.modal-card input { padding:10px; border-radius:10px; border:none; outline:none; background:rgba(255,255,255,0.05); color:var(--text); }
+.profile-actions { display:flex; gap:10px; justify-content:flex-end; }
+.profile-actions button { padding:10px; border-radius:10px; border:none; background:var(--primary); color:#fff; font-weight:600; }
+#view-pfp { width:80px; height:80px; border-radius:50%; object-fit:cover; margin:auto; display:block; }
 
 /* SCROLLBARS */
-.messages-wrap::-webkit-scrollbar,
-.chats-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.messages-wrap::-webkit-scrollbar-thumb,
-.chats-list::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
-  border-radius: 3px;
-}
-
-.admin-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: linear-gradient(135deg, #ffdd44, #ffcc00, #ffe680);
-  color: #2a1f00;
-  font-weight: 700;
-  font-size: 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 215, 0, 0.9);
-  box-shadow: 
-      0 0 10px rgba(255, 215, 0, 0.9),
-      0 0 4px rgba(255, 175, 0, 0.9),
-      inset 0 0 5px rgba(255, 255, 255, 0.4);
-}
-
-.admin-crown {
-  font-size: 1.2rem;
-  color: gold;
-  filter: drop-shadow(0 0 3px gold);
-}
-
+.messages-wrap::-webkit-scrollbar, .chats-list::-webkit-scrollbar { width:6px; }
+.messages-wrap::-webkit-scrollbar-thumb, .chats-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
 
 /* RESPONSIVE */
-@media (max-width: 768px){
-  .app-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .left-col {
-    height: 300px;
-    overflow-y: auto;
-  }
-
-  .main-col {
-    flex: 1;
-  }
+@media(max-width:768px){
+  .app-grid { grid-template-columns:1fr; }
+  .left-col { height: 300px; overflow-y:auto; }
+  .main-col { flex:1; }
+  .composer { flex-direction:column; gap:6px; }
+  .composer button { width:100%; }
 }
-
-
-
