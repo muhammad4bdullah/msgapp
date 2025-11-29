@@ -107,6 +107,196 @@
   </div>
 </div>
 
-<script type="module" src="app.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+    apiKey: "AIzaSyAEWxTJ1loQkXM1ShwAAF1J15RQLlCgdGM",
+    authDomain: "msgapp-262c9.firebaseapp.com",
+    projectId: "msgapp-262c9",
+    storageBucket: "msgapp-262c9.firebasestorage.app",
+    messagingSenderId: "122648836940",
+    appId: "1:122648836940:web:a098c052f65f3eb305ade9"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+// ===== DOM ELEMENTS =====
+const loginOverlay = document.getElementById("login-overlay");
+const googleLoginBtn = document.getElementById("google-login-btn");
+const appGrid = document.querySelector(".app-grid");
+const topAvatar = document.getElementById("top-avatar");
+const messagesWrap = document.querySelector(".messages-wrap");
+const messagesContainer = document.querySelector(".messages");
+const composerInput = document.querySelector(".composer input");
+const composerBtn = document.querySelector(".composer button");
+const joinRoomBtn = document.getElementById("join-room-btn");
+const createRoomBtn = document.getElementById("create-room-btn");
+const roomInput = document.getElementById("room-name-input");
+const profileModal = document.getElementById("profile-modal");
+const profileUsername = document.getElementById("profile-username");
+const profileSaveBtn = document.getElementById("profile-save-btn");
+const profileAvatar = document.getElementById("view-pfp");
+const logoutBtn = document.getElementById("logout-btn");
+
+let currentUser = null;
+let currentRoom = null;
+let isAdmin = false;
+
+// ===== ADMIN UID =====
+const ADMIN_UID = "YOUR_ADMIN_UID_HERE"; // Replace with your Firebase UID
+
+// ===== LOGIN =====
+googleLoginBtn.addEventListener("click", async () => {
+    try {
+        const result = await signInWithPopup(auth, provider);
+        currentUser = result.user;
+        isAdmin = currentUser.uid === ADMIN_UID;
+
+        loginOverlay.classList.add("hidden");
+        appGrid.style.display = "grid";
+        topAvatar.src = currentUser.photoURL;
+        profileAvatar.src = currentUser.photoURL;
+
+        await ensureUserProfile();
+    } catch (err) {
+        console.error("Login failed:", err);
+        alert("Login failed");
+    }
+});
+
+// ===== ENSURE USER PROFILE =====
+async function ensureUserProfile() {
+    const userDoc = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userDoc);
+    if (!snap.exists()) {
+        await setDoc(userDoc, {
+            username: currentUser.displayName,
+            avatar: currentUser.photoURL,
+            lastUsernameChange: Date.now(),
+            isAdmin
+        });
+    }
+}
+
+// ===== JOIN ROOM =====
+joinRoomBtn.addEventListener("click", async () => {
+    const roomName = roomInput.value.trim();
+    if (!roomName) return alert("Enter a room name");
+    await joinRoom(roomName);
+});
+
+// ===== CREATE ROOM =====
+createRoomBtn.addEventListener("click", async () => {
+    const roomName = roomInput.value.trim();
+    if (!roomName) return alert("Enter a room name");
+
+    const roomDoc = doc(db, "rooms", roomName);
+    const snap = await getDoc(roomDoc);
+    if (snap.exists()) return alert("Room already exists");
+
+    await setDoc(roomDoc, { createdAt: Date.now(), creator: currentUser.uid });
+    await joinRoom(roomName);
+});
+
+// ===== JOIN ROOM FUNCTION =====
+async function joinRoom(roomName) {
+    currentRoom = roomName;
+    messagesContainer.innerHTML = "";
+
+    const roomRef = collection(db, "rooms", roomName, "messages");
+    const q = query(roomRef, orderBy("timestamp"));
+
+    onSnapshot(q, (snapshot) => {
+        messagesContainer.innerHTML = "";
+        snapshot.forEach(docSnap => displayMessage(docSnap.data()));
+        messagesWrap.scrollTop = messagesWrap.scrollHeight;
+    });
+}
+
+// ===== SEND MESSAGE =====
+composerBtn.addEventListener("click", async () => {
+    const text = composerInput.value.trim();
+    if (!text || !currentRoom) return;
+
+    const roomRef = collection(db, "rooms", currentRoom, "messages");
+    await addDoc(roomRef, {
+        text,
+        uid: currentUser.uid,
+        username: currentUser.displayName,
+        avatar: currentUser.photoURL,
+        timestamp: Date.now(),
+        isAdmin
+    });
+    composerInput.value = "";
+});
+
+// ===== DISPLAY MESSAGE =====
+function displayMessage(msg) {
+    const div = document.createElement("div");
+    div.classList.add("message");
+    div.classList.add(msg.uid === currentUser.uid ? "mine" : "theirs");
+
+    let usernameBadge = msg.username;
+    if (msg.isAdmin) usernameBadge += ' <span class="admin-crown">★</span>';
+
+    div.innerHTML = `
+        <div class="msg-info">
+            <img src="${msg.avatar}" alt="${msg.username}" />
+            <strong>${usernameBadge}</strong>
+        </div>
+        <div>${msg.text}</div>
+    `;
+    messagesContainer.appendChild(div);
+}
+
+// ===== PROFILE EDITING =====
+profileSaveBtn.addEventListener("click", async () => {
+    const newUsername = profileUsername.value.trim();
+    if (!newUsername) return;
+
+    const userDoc = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userDoc);
+    const data = snap.data();
+    const fifteenDays = 1000 * 60 * 60 * 24 * 15;
+
+    if (Date.now() - data.lastUsernameChange < fifteenDays) {
+        return alert("Username can only be changed once every 15 days");
+    }
+
+    await setDoc(userDoc, {
+        ...data,
+        username: newUsername,
+        lastUsernameChange: Date.now()
+    });
+    alert("Username updated!");
+});
+
+// ===== LOGOUT =====
+logoutBtn.addEventListener("click", () => {
+    signOut(auth).then(() => location.reload());
+});
+
+// ===== AUTH STATE CHANGE =====
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUser = user;
+        isAdmin = currentUser.uid === ADMIN_UID;
+        loginOverlay.classList.add("hidden");
+        appGrid.style.display = "grid";
+        topAvatar.src = currentUser.photoURL;
+        profileAvatar.src = currentUser.photoURL;
+        ensureUserProfile();
+    }
+});
+</script>
+
 </body>
 </html>
+
