@@ -378,3 +378,4 @@ function renderLeftChats() {
 
 // ----------------- Init (nothing else) -----------------
 console.log("App loaded");
+ 
