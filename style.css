@@ -315,17 +315,21 @@ button { cursor: pointer; }
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: linear-gradient(135deg, #ffd700, #ffce00, #fff1a8);
+  background: linear-gradient(135deg, #ffdd44, #ffcc00, #ffe680);
   color: #2a1f00;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 1rem;
   border-radius: 12px;
-  border: 1px solid rgba(255, 215, 0, 0.7);
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 5px rgba(255, 215, 0, 0.5);
+  border: 1px solid rgba(255, 215, 0, 0.9);
+  box-shadow: 
+      0 0 10px rgba(255, 215, 0, 0.9),
+      0 0 4px rgba(255, 175, 0, 0.9),
+      inset 0 0 5px rgba(255, 255, 255, 0.4);
 }
 
 .admin-crown {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  color: gold;
   filter: drop-shadow(0 0 3px gold);
 }
 
@@ -345,5 +349,6 @@ button { cursor: pointer; }
     flex: 1;
   }
 }
+
 
 
