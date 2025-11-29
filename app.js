@@ -12,10 +12,11 @@ const firebaseConfig = {
   apiKey: "AIzaSyAEWxTJ1loQkXM1ShwAAF1J15RQLlCgdGM",
   authDomain: "msgapp-262c9.firebaseapp.com",
   projectId: "msgapp-262c9",
-  storageBucket: "msgapp-262c9.appspot.com",
+  storageBucket: "msgapp-262c9.appspot.com", // <-- FIXED
   messagingSenderId: "122648836940",
   appId: "1:122648836940:web:a098c052f65f3eb305ade9"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -457,3 +458,4 @@ function joinRoomFromURL(){
     safeSet(roomPassDisplay,`Password: ${pass}`);
     updateRoomLink(rid,pass);
     listenMessages
+
