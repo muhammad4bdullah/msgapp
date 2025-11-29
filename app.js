@@ -1,4 +1,4 @@
-// app.js - COMPLETE FIXED VERSION
+// app.js - FIXED + auto-join URL
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc, addDoc, collection, onSnapshot, deleteDoc
@@ -47,6 +47,7 @@ const cancelEditBtn = document.getElementById('cancel-edit');
 const chatsLeftDisplay = document.getElementById('chats-left');
 const roomIdDisplay = document.getElementById('room-id-display');
 const roomPassDisplay = document.getElementById('room-pass-display');
+const linkDisplay = document.getElementById('link-display');
 
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send');
@@ -78,6 +79,13 @@ function closeProfileModal() { profileModal.classList.add('hidden'); }
 function showViewMode() { viewMode.classList.remove('hidden'); editMode.classList.add('hidden'); }
 function showEditMode() { viewMode.classList.add('hidden'); editMode.classList.remove('hidden'); }
 
+function updateRoomLink(rid, pass) {
+  if (!linkDisplay) return;
+  const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
+  const url = `${base}?room=${encodeURIComponent(rid)}&pass=${encodeURIComponent(pass)}`;
+  linkDisplay.innerHTML = `Share link: <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
+}
+
 // ---------------- AUTH ----------------
 googleLoginBtn.onclick = async () => {
   const provider = new GoogleAuthProvider();
@@ -85,7 +93,10 @@ googleLoginBtn.onclick = async () => {
   catch (e) { console.error("Login failed:", e); alert("Login failed: " + (e.message || e)); }
 };
 
-logoutBtn.onclick = async () => await signOut(auth);
+logoutBtn.onclick = async () => {
+  try { await signOut(auth); }
+  catch (e) { console.error("Logout failed:", e); }
+};
 
 // ---------------- AUTH STATE ----------------
 onAuthStateChanged(auth, async user => {
@@ -96,6 +107,8 @@ onAuthStateChanged(auth, async user => {
     await ensureUserDoc(user);
     await loadCurrentUserDoc();
     await refreshDailyQuotaUI();
+    // if there was a room query param, auto-join
+    autoJoinFromURL();
   } else {
     currentUser = null;
     currentUserDoc = null;
@@ -110,33 +123,42 @@ onAuthStateChanged(auth, async user => {
 async function ensureUserDoc(user) {
   const ref = doc(db, 'users', user.uid);
   const snap = await getDoc(ref);
-  if (!snap.exists()) await setDoc(ref, {
-    email: user.email || null,
-    nickname: user.displayName || '',
-    avatarUrl: user.photoURL || '',
-    role: 'user',
-    username: null,
-    usernameLastChanged: null,
-    bio: '',
-    banned: false
-  });
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      email: user.email || null,
+      nickname: user.displayName || '',
+      avatarUrl: user.photoURL || '',
+      role: 'user',
+      username: null,
+      usernameLastChanged: null,
+      bio: '',
+      banned: false
+    });
+  }
 }
 
 async function loadCurrentUserDoc() {
   if (!currentUser) return;
   const ref = doc(db, 'users', currentUser.uid);
   const snap = await getDoc(ref);
-  if (!snap.exists()) return currentUserDoc = null;
+  if (!snap.exists()) { currentUserDoc = null; return; }
   currentUserDoc = snap.data();
   currentUserRole = currentUserDoc.role || 'user';
   currentUserIsAdmin = currentUserRole === 'admin';
   MAX_CHATS_PER_DAY = ROLE_QUOTAS[currentUserRole] ?? 10;
 
+  // ensure admin nickname tag
   if (currentUserIsAdmin) {
     let nick = currentUserDoc.nickname || currentUser.displayName || '';
     nick = nick.replace(/\s*\[Admin\]$/, '') + ' [Admin]';
-    if (nick !== currentUserDoc.nickname) await updateDoc(ref, { nickname: nick });
+    if (nick !== currentUserDoc.nickname) {
+      try { await updateDoc(ref, { nickname: nick }); currentUserDoc.nickname = nick; } catch (e) { console.error("Update admin nickname failed:", e); }
+    }
   }
+
+  // update profile avatar in topbar if you use profile-avatar id
+  const profileAvatar = document.getElementById('profile-avatar');
+  if (profileAvatar) profileAvatar.src = currentUserDoc?.avatarUrl || currentUser.photoURL || '';
 }
 
 // ---------------- DAILY QUOTA ----------------
@@ -181,8 +203,10 @@ createChatBtn.onclick = async () => {
   const rid = rand(8), pass = rand(6);
   currentRoomId = rid;
   await setDoc(doc(db, 'rooms', rid), { password: pass, createdBy: currentUser.uid, members: [currentUser.uid], createdAt: Date.now() });
+
   safeSet(roomIdDisplay, `Room ID: ${rid}`);
   safeSet(roomPassDisplay, `Password: ${pass}`);
+  updateRoomLink(rid, pass);            // <-- auto-join link added
   listenMessages();
   await refreshDailyQuotaUI();
 };
@@ -197,6 +221,7 @@ joinRoomBtn.onclick = async () => {
   currentRoomId = rid;
   safeSet(roomIdDisplay, `Room ID: ${rid}`);
   safeSet(roomPassDisplay, `Password: ${pass}`);
+  updateRoomLink(rid, pass);            // update link on join also
   listenMessages();
 };
 
@@ -209,17 +234,17 @@ async function sendMessage() {
   if (!currentRoomId) return alert('Join or create a room first');
   const txt = messageInput.value.trim();
   if (!txt) return;
-await addDoc(collection(db, 'rooms', currentRoomId, 'messages'), {
-  text: txt,
-  nickname: currentUserDoc?.nickname || currentUser.displayName || '',
-  username: currentUserDoc?.username || null,
-  avatarUrl: currentUserDoc?.avatarUrl || currentUser.photoURL || '',
-  userId: currentUser.uid,
-  role: currentUserDoc?.role || "user",
-  timestamp: Date.now()
-});
-estamp: Date.now()
+
+  await addDoc(collection(db, 'rooms', currentRoomId, 'messages'), {
+    text: txt,
+    nickname: currentUserDoc?.nickname || currentUser.displayName || '',
+    username: currentUserDoc?.username || null,
+    avatarUrl: currentUserDoc?.avatarUrl || currentUser.photoURL || '',
+    userId: currentUser.uid,
+    role: currentUserDoc?.role || "user",
+    timestamp: Date.now()
   });
+
   messageInput.value = '';
 }
 
@@ -235,32 +260,36 @@ function listenMessages() {
         div.className = 'message ' + ((m.userId === currentUser?.uid) ? 'mine' : 'theirs');
 
         const info = document.createElement('div'); info.className = 'msg-info';
-        if (m.avatarUrl) { const img = document.createElement('img'); img.src = m.avatarUrl; img.onclick = () => openUserProfile(m.userId); info.appendChild(img); }
-       const nameSpan = document.createElement('span');
+        if (m.avatarUrl) {
+          const img = document.createElement('img'); img.src = m.avatarUrl;
+          img.style.cursor = 'pointer';
+          img.onclick = () => openUserProfile(m.userId);
+          info.appendChild(img);
+        }
 
-if (m.role === "admin") {
-  nameSpan.innerHTML = `
-    <span class="admin-name">
-      <span class="admin-crown">👑</span>
-      ${m.nickname}
-    </span>
-  `;
-} else {
-  nameSpan.textContent = m.nickname || 'Unknown';
-}
-
-nameSpan.onclick = () => openUserProfile(m.userId);
-info.appendChild(nameSpan);
-
+        const nameSpan = document.createElement('span');
+        if (m.role === "admin") {
+          nameSpan.innerHTML = `
+            <span class="admin-name">
+              <span class="admin-crown">👑</span>
+              ${m.nickname}
+            </span>
+          `;
+        } else {
+          nameSpan.textContent = m.nickname || 'Unknown';
+        }
+        nameSpan.style.cursor = 'pointer';
+        nameSpan.onclick = () => openUserProfile(m.userId);
+        info.appendChild(nameSpan);
 
         if (currentUserIsAdmin || currentUserRole === 'coadmin') {
           const del = document.createElement('button'); del.textContent = 'Del';
-          del.onclick = async () => { try { await deleteDoc(d.ref); alert('Message deleted'); } catch (e) { alert('Delete failed'); } };
+          del.onclick = async () => { try { await deleteDoc(d.ref); alert('Message deleted'); } catch (e) { console.error(e); alert('Delete failed'); } };
           info.appendChild(del);
         }
 
         div.appendChild(info);
-        const textDiv = document.createElement('div'); textDiv.className = 'msg-text'; textDiv.textContent = m.text;
+        const textDiv = document.createElement('div'); textDiv.className = 'msg-text'; textDiv.textContent = m.text || '';
         div.appendChild(textDiv);
 
         messagesDiv.appendChild(div);
@@ -269,3 +298,56 @@ info.appendChild(nameSpan);
   });
 }
 
+// ---------------- AUTO JOIN FROM URL ----------------
+function autoJoinFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const rid = params.get('room');
+  const pass = params.get('pass');
+  if (!rid || !pass) return;
+  // try to auto-join (no alert on failure)
+  getDoc(doc(db, 'rooms', rid)).then(snap => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (data.password !== pass) return;
+    currentRoomId = rid;
+    safeSet(roomIdDisplay, `Room ID: ${rid}`);
+    safeSet(roomPassDisplay, `Password: ${pass}`);
+    updateRoomLink(rid, pass);
+    listenMessages();
+  }).catch(e => console.error("autoJoinFromURL error:", e));
+}
+
+// ---------------- PROFILE / VIEW (placeholder) ----------------
+// openUserProfile needs your existing implementation (profile modal rendering).
+// If you want, I can also rewrite the profile modal code to match this updated structure.
+
+function openUserProfile(uid) {
+  // placeholder minimal: open profile modal and show uid
+  openProfileModal();
+  showViewMode();
+  viewNickname.textContent = 'Loading...';
+  viewUsername.textContent = '';
+  viewRole.textContent = '';
+  viewBio.textContent = '';
+  viewPfp.src = '';
+
+  getDoc(doc(db, 'users', uid)).then(snap => {
+    if (!snap.exists()) {
+      viewNickname.textContent = 'Unknown';
+      return;
+    }
+    const data = snap.data();
+    viewPfp.src = data.avatarUrl || '';
+    viewNickname.textContent = data.nickname || '';
+    viewUsername.textContent = data.username ? '@' + data.username : '';
+    viewRole.textContent = (data.role || 'user').toUpperCase();
+    viewBio.textContent = data.bio || '';
+    // admin actions area (if any) should be rendered here
+  }).catch(e => {
+    console.error("openUserProfile error:", e);
+    viewNickname.textContent = 'Error';
+  });
+}
+
+// ---------------- INIT ----------------
+console.log('app.js loaded');
