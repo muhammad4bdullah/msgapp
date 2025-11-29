@@ -185,27 +185,32 @@ async function readDailyLimitDoc(uid){
 async function tryConsumeCreateQuota(uid){
   // admin bypass
   if(currentUserIsAdmin) {
-  return { ok: true, remaining: ROLE_QUOTAS['admin'] };
-}
-
+    return { ok: true, remaining: ROLE_QUOTAS['admin'] };
   }
+
   const metaRef = doc(db, 'users', uid, 'meta', 'dailyLimit');
   const snap = await getDoc(metaRef);
   const today = new Date().toISOString().split('T')[0];
+
   if(!snap.exists()){
     await setDoc(metaRef, { chatsLeft: MAX_CHATS_PER_DAY - 1, lastReset: today });
     return { ok:true, remaining: MAX_CHATS_PER_DAY - 1 };
   }
+
   const data = snap.data();
+
   if(data.lastReset !== today){
     await setDoc(metaRef, { chatsLeft: MAX_CHATS_PER_DAY - 1, lastReset: today }, { merge:true });
     return { ok:true, remaining: MAX_CHATS_PER_DAY - 1 };
   }
+
   const current = (typeof data.chatsLeft === 'number') ? data.chatsLeft : MAX_CHATS_PER_DAY;
   if(current <= 0) return { ok:false, remaining:0 };
+
   await updateDoc(metaRef, { chatsLeft: current - 1 });
   return { ok:true, remaining: current - 1 };
 }
+
 
 // refresh UI number
 async function refreshDailyQuotaUI(){
@@ -529,3 +534,4 @@ function safeSet(el, text){ if(el) el.textContent = text; }
 
 // ---------- INIT ----------
 console.log('App script loaded');
+
