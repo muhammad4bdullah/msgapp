@@ -1,205 +1,177 @@
+// app.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, addDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-// ===== FIREBASE CONFIG =====
+// Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyAEWxTJ1loQkXM1ShwAAF1J15RQLlCgdGM",
   authDomain: "msgapp-262c9.firebaseapp.com",
   projectId: "msgapp-262c9",
-  storageBucket: "msgapp-262c9.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  storageBucket: "msgapp-262c9.firebasestorage.app",
+  messagingSenderId: "122648836940",
+  appId: "1:122648836940:web:a098c052f65f3eb305ade9"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-// ===== DOM ELEMENTS =====
-const loginOverlay = document.getElementById('login-overlay');
-const googleLoginBtn = document.getElementById('google-login-btn');
-const logoutBtn = document.getElementById('logout-btn');
+// ==== ELEMENTS ====
+const loginOverlay = document.getElementById("login-overlay");
+const googleLoginBtn = document.getElementById("google-login-btn");
+const topAvatar = document.querySelector(".topbar .avatar");
+const logoutBtn = document.querySelector(".topbar button");
+const messagesWrap = document.querySelector(".messages-wrap");
+const messagesContainer = document.querySelector(".messages");
+const messageInput = document.querySelector(".composer input");
+const sendBtn = document.querySelector(".composer button");
+const roomInput = document.querySelector(".room-controls input");
+const joinBtn = document.querySelector(".room-controls button");
+const profileModal = document.querySelector(".modal");
+const profileAvatar = document.getElementById("view-pfp");
+const profileUsername = document.getElementById("profile-username");
+const profileEditInput = document.getElementById("profile-edit-input");
+const saveProfileBtn = document.getElementById("save-profile-btn");
 
-const profileModal = document.getElementById('profile-modal');
-const profileAvatar = document.getElementById('profile-avatar');
-
-const viewMode = document.getElementById('profile-view');
-const editMode = document.getElementById('profile-edit');
-const viewPfp = document.getElementById('view-pfp');
-const viewNickname = document.getElementById('view-nickname');
-const viewUsername = document.getElementById('view-username');
-const viewRole = document.getElementById('view-role');
-const viewBio = document.getElementById('view-bio');
-const viewAdminActions = document.getElementById('view-admin-actions');
-const closeProfileView = document.getElementById('close-profile-view');
-
-const editNickname = document.getElementById('edit-nickname');
-const editUsername = document.getElementById('edit-username');
-const editAvatar = document.getElementById('edit-avatar');
-const saveProfileBtn = document.getElementById('save-profile');
-const cancelEditBtn = document.getElementById('cancel-edit');
-
-const messageInput = document.getElementById('message-input');
-const sendBtn = document.getElementById('send');
-const messagesDiv = document.getElementById('messages');
-
-const roomIdInput = document.getElementById('room-id');
-const roomPassInput = document.getElementById('room-pass');
-const createRoomBtn = document.getElementById('create-chat');
-const joinRoomBtn = document.getElementById('join-room');
-
+// ==== GLOBAL STATE ====
 let currentUser = null;
-let currentRoomId = null;
+let currentRoom = null;
+let isAdmin = false;
+let lastUsernameEdit = null;
 
-// ===== LOGIN / LOGOUT =====
-googleLoginBtn.onclick = async () => {
-  const provider = new GoogleAuthProvider();
+// ==== ADMIN CONFIG ====
+const ADMIN_UID = "YOUR_ADMIN_UID_HERE"; // Replace with your Google UID
+
+// ==== LOGIN ====
+googleLoginBtn.addEventListener("click", async () => {
   try {
-    await signInWithPopup(auth, provider);
-  } catch(e) {
-    alert("Login failed: " + e.message);
-  }
-};
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-};
+    const result = await signInWithPopup(auth, provider);
+    currentUser = result.user;
+    loginOverlay.classList.add("hidden");
 
-// ===== AUTH STATE =====
-onAuthStateChanged(auth, async user => {
-  if(user){
-    currentUser = user;
-    loginOverlay.classList.add('hidden');
-    profileAvatar.src = user.photoURL || '';
-    await ensureUserDoc(user);
-  } else {
-    currentUser = null;
-    loginOverlay.classList.remove('hidden');
+    // Check if admin
+    isAdmin = currentUser.uid === ADMIN_UID;
+
+    topAvatar.src = currentUser.photoURL;
+    await initUserProfile();
+  } catch (err) {
+    console.error("Login failed:", err);
   }
 });
 
-// ===== ENSURE USER DOC =====
-async function ensureUserDoc(user){
-  const ref = doc(db,'users',user.uid);
-  const snap = await getDoc(ref);
-  if(!snap.exists()){
-    await setDoc(ref,{
-      email: user.email,
-      nickname: user.displayName || '',
-      username: null,
-      avatarUrl: user.photoURL || '',
-      role: 'user',
-      bio: ''
+// ==== LOGOUT ====
+logoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+  location.reload();
+});
+
+// ==== INIT USER PROFILE ====
+async function initUserProfile() {
+  const userRef = doc(db, "users", currentUser.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    // First-time login
+    await setDoc(userRef, {
+      username: currentUser.displayName,
+      avatar: currentUser.photoURL,
+      lastEdit: Date.now()
     });
   }
+
+  const userData = (await getDoc(userRef)).data();
+  profileAvatar.src = userData.avatar;
+  profileUsername.textContent = userData.username;
+  lastUsernameEdit = userData.lastEdit;
 }
 
-// ===== PROFILE MODAL =====
-profileAvatar.onclick = () => openUserProfile(currentUser.uid);
-closeProfileView.onclick = () => profileModal.classList.add('hidden');
+// ==== PROFILE MODAL ====
+topAvatar.addEventListener("click", () => {
+  profileModal.classList.remove("hidden");
+});
 
-async function openUserProfile(uid){
-  profileModal.classList.remove('hidden');
-  viewMode.classList.remove('hidden');
-  editMode.classList.add('hidden');
-
-  const snap = await getDoc(doc(db,'users',uid));
-  if(!snap.exists()) return;
-
-  const data = snap.data();
-  viewPfp.src = data.avatarUrl || '';
-  viewNickname.textContent = data.nickname || '';
-  viewUsername.textContent = data.username ? '@' + data.username : '';
-  viewRole.textContent = (data.role || 'user').toUpperCase();
-  viewBio.textContent = data.bio || '';
-
-  viewAdminActions.innerHTML = '';
-  if(currentUser.uid !== uid && currentUser.role === 'admin'){
-    const kickBtn = document.createElement('button');
-    kickBtn.textContent = "Kick User";
-    kickBtn.onclick = ()=>alert("Kick logic here");
-    viewAdminActions.appendChild(kickBtn);
+saveProfileBtn.addEventListener("click", async () => {
+  const now = Date.now();
+  if (now - lastUsernameEdit < 15 * 24 * 60 * 60 * 1000) {
+    alert("You can only change username once every 15 days!");
+    return;
   }
+
+  const newUsername = profileEditInput.value.trim();
+  if (!newUsername) return;
+
+  const userRef = doc(db, "users", currentUser.uid);
+  await updateDoc(userRef, { username: newUsername, lastEdit: now });
+  profileUsername.textContent = newUsername;
+  lastUsernameEdit = now;
+  profileModal.classList.add("hidden");
+});
+
+// ==== JOIN OR CREATE ROOM ====
+joinBtn.addEventListener("click", async () => {
+  const roomName = roomInput.value.trim();
+  if (!roomName) return alert("Enter a room name");
+
+  currentRoom = roomName;
+  await initRoom(roomName);
+});
+
+// ==== INIT ROOM ====
+async function initRoom(roomName) {
+  messagesContainer.innerHTML = ""; // clear old messages
+  const roomRef = collection(db, "rooms", roomName, "messages");
+  const q = query(roomRef, orderBy("timestamp"));
+  
+  onSnapshot(q, (snapshot) => {
+    messagesContainer.innerHTML = "";
+    snapshot.forEach(docSnap => {
+      const msg = docSnap.data();
+      displayMessage(msg);
+    });
+    messagesWrap.scrollTop = messagesWrap.scrollHeight;
+  });
 }
 
-// ===== EDIT PROFILE =====
-saveProfileBtn.onclick = async () => {
-  const ref = doc(db,'users',currentUser.uid);
-  const data = {};
-  if(editNickname.value) data.nickname = editNickname.value;
-  if(editUsername.value) data.username = editUsername.value;
-  if(editAvatar.files[0]){
-    // In production, upload to Firebase Storage & get URL
-    const file = editAvatar.files[0];
-    data.avatarUrl = URL.createObjectURL(file);
-  }
-  await updateDoc(ref,data);
-  openUserProfile(currentUser.uid);
-};
-cancelEditBtn.onclick = () => {
-  editMode.classList.add('hidden');
-  viewMode.classList.remove('hidden');
-};
-
-// ===== MESSAGES =====
-sendBtn.onclick = sendMessage;
-messageInput.addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
-
-async function sendMessage(){
-  if(!currentUser || !currentRoomId) return;
+// ==== SEND MESSAGE ====
+sendBtn.addEventListener("click", async () => {
   const text = messageInput.value.trim();
-  if(!text) return;
-  await addDoc(collection(db,'rooms',currentRoomId,'messages'),{
+  if (!text || !currentRoom) return;
+
+  const roomRef = collection(db, "rooms", currentRoom, "messages");
+
+  // Admin priority: admin messages always first (if required)
+  await addDoc(roomRef, {
     text,
-    userId: currentUser.uid,
-    nickname: currentUser.displayName || '',
-    avatarUrl: currentUser.photoURL || '',
-    timestamp: Date.now()
+    uid: currentUser.uid,
+    username: currentUser.displayName,
+    timestamp: Date.now(),
+    isAdmin
   });
-  messageInput.value = '';
+
+  messageInput.value = "";
+});
+
+// ==== DISPLAY MESSAGE ====
+function displayMessage(msg) {
+  const div = document.createElement("div");
+  div.classList.add("message");
+  if (msg.uid === currentUser.uid) div.classList.add("mine");
+  else div.classList.add("theirs");
+
+  // Admin styling
+  let usernameDisplay = msg.username;
+  if (msg.isAdmin) usernameDisplay = `<span class="admin-name">${msg.username} <span class="admin-crown">👑</span></span>`;
+
+  div.innerHTML = `
+    <div class="msg-info">
+      <img src="${msg.avatar || profileAvatar.src}" />
+      <span>${usernameDisplay}</span>
+    </div>
+    <div class="msg-text">${msg.text}</div>
+  `;
+  messagesContainer.appendChild(div);
+  messagesWrap.scrollTop = messagesWrap.scrollHeight;
 }
-
-// ===== LISTEN MESSAGES =====
-function listenMessages(){
-  if(!currentRoomId) return;
-  const col = collection(db,'rooms',currentRoomId,'messages');
-  onSnapshot(col, snap=>{
-    messagesDiv.innerHTML = '';
-    snap.docs.sort((a,b)=> (a.data().timestamp||0) - (b.data().timestamp||0))
-      .forEach(d=>{
-        const m = d.data();
-        const div = document.createElement('div');
-        div.className = 'message ' + (m.userId === currentUser.uid ? 'mine' : 'theirs');
-        const info = document.createElement('div'); info.className='msg-info';
-        const img = document.createElement('img'); img.src = m.avatarUrl; img.onclick = ()=>openUserProfile(m.userId);
-        info.appendChild(img);
-        const name = document.createElement('span'); name.textContent = m.nickname; name.onclick = ()=>openUserProfile(m.userId);
-        info.appendChild(name);
-        div.appendChild(info);
-        const textDiv = document.createElement('div'); textDiv.className='msg-text'; textDiv.textContent = m.text;
-        div.appendChild(textDiv);
-        messagesDiv.appendChild(div);
-      });
-    messagesDiv.scrollTo({top:messagesDiv.scrollHeight, behavior:'smooth'});
-  });
-}
-
-// ===== ROOM CREATION & JOIN =====
-createRoomBtn.onclick = async () => {
-  if(!currentUser) return;
-  const roomId = roomIdInput.value.trim() || 'room-' + Date.now();
-  currentRoomId = roomId;
-  await setDoc(doc(db,'rooms',roomId),{created: Date.now()});
-  listenMessages();
-  alert("Room created: "+roomId);
-};
-
-joinRoomBtn.onclick = async () => {
-  const roomId = roomIdInput.value.trim();
-  if(!roomId) return alert("Enter Room ID");
-  const snap = await getDoc(doc(db,'rooms',roomId));
-  if(!snap.exists()) return alert("Room not found");
-  currentRoomId = roomId;
-  listenMessages();
-  alert("Joined Room: "+roomId);
-};
