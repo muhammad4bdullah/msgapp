@@ -11,6 +11,10 @@
   font-family: 'Inter', sans-serif;
 }
 
+
+
+
+
 * {
   margin: 0;
   padding: 0;
@@ -321,3 +325,4 @@ button { cursor: pointer; }
     flex: 1;
   }
 }
+
