@@ -56,6 +56,7 @@
         <div class="profile-btn" id="profile-btn" title="Open profile">
           <img src="" class="avatar" id="profile-avatar" alt="avatar">
         </div>
+        <button id="logout-btn">Log Out</button>
       </div>
     </div>
 
@@ -75,11 +76,22 @@
 <div class="modal hidden" id="profile-modal">
   <div class="modal-card">
     <h3>Profile</h3>
-    <input type="text" id="nickname-input" placeholder="Set nickname">
-    <input type="file" id="avatar-input" accept="image/*">
+    <input type="text" id="edit-nickname" placeholder="Set nickname">
+    <input type="text" id="edit-username" placeholder="Set username">
+    <input type="file" id="edit-avatar" accept="image/*">
+    <p id="username-lock-note"></p>
     <div class="profile-actions">
       <button id="save-profile">Save</button>
-      <button id="logout-btn">Log Out</button>
+      <button id="cancel-edit">Cancel</button>
+    </div>
+    <div id="profile-view" class="hidden">
+      <img id="view-pfp" src="" alt="avatar">
+      <p id="view-nickname"></p>
+      <p id="view-username"></p>
+      <p id="view-role"></p>
+      <p id="view-bio"></p>
+      <div id="view-admin-actions"></div>
+      <button id="close-profile-view">Close</button>
     </div>
   </div>
 </div>
