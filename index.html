@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Link Chat App</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Link Chat App</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- Login Overlay -->
+<!-- LOGIN OVERLAY -->
 <div id="login-overlay">
   <div class="login-card">
     <h2>Login to Chat</h2>
@@ -16,16 +16,18 @@
   </div>
 </div>
 
-<!-- App Grid -->
+<!-- MAIN APP GRID -->
 <div class="app-grid hidden">
 
-  <!-- Left Column -->
+  <!-- LEFT PANEL -->
   <div class="left-col">
-    <div class="brand">
-      <div class="logo">💬</div>
-      <div class="brand-text">
-        <div class="title">Link Chat</div>
-        <div class="subtitle">Your Rooms</div>
+    <div class="left-header">
+      <div class="brand">
+        <div class="logo">💬</div>
+        <div class="brand-text">
+          <div class="title">Link Chat</div>
+          <div class="subtitle">Your Rooms</div>
+        </div>
       </div>
     </div>
 
@@ -43,12 +45,16 @@
     <div class="left-footer"><p id="chats-left">Loading...</p></div>
   </div>
 
-  <!-- Main Column -->
+  <!-- MAIN CHAT AREA -->
   <div class="main-col">
     <div class="topbar">
-      <span class="room-title" id="room-title">Select a Chat</span>
+      <div class="top-left">
+        <span class="room-title" id="room-title">Select a Chat</span>
+      </div>
       <div class="top-right">
-        <img id="profile-avatar" class="avatar" title="Your Profile">
+        <div class="profile-btn" id="profile-btn" title="Open profile">
+          <img src="" class="avatar" id="profile-avatar" alt="avatar">
+        </div>
         <button id="logout-btn">Log Out</button>
       </div>
     </div>
@@ -63,40 +69,41 @@
       </div>
     </div>
   </div>
-
 </div>
 
-<!-- Profile Modal -->
-<div id="profile-modal" class="modal hidden">
+<!-- PROFILE MODAL -->
+<div class="modal hidden" id="profile-modal">
   <div class="modal-card">
-    <!-- Close -->
-    <button id="close-profile-view" class="close-btn">✖</button>
 
-    <!-- View Mode -->
+    <!-- VIEW MODE -->
     <div id="profile-view">
-      <img id="view-pfp" src="" alt="avatar">
-      <h3 id="view-nickname"></h3>
+      <img id="view-pfp" src="" alt="Avatar">
+      <p id="view-nickname"></p>
       <p id="view-username"></p>
       <p id="view-role"></p>
       <p id="view-bio"></p>
       <div id="view-admin-actions"></div>
-      <button id="edit-profile-btn" class="hidden">Edit</button>
+      <button id="close-profile-view">Close</button>
     </div>
 
-    <!-- Edit Mode -->
+    <!-- EDIT MODE -->
     <div id="profile-edit" class="hidden">
-      <label>Nickname:</label>
-      <input type="text" id="edit-nickname" placeholder="Nickname">
-      <label>Username:</label>
-      <input type="text" id="edit-username" placeholder="Username">
-      <label>Avatar URL:</label>
-      <input type="text" id="edit-avatar" placeholder="Avatar URL">
-      <p id="username-lock-note"></p>
+      <label for="edit-avatar">Avatar</label>
+      <input type="file" id="edit-avatar" accept="image/*">
+
+      <label for="edit-nickname">Nickname</label>
+      <input type="text" id="edit-nickname" placeholder="Enter nickname">
+
+      <label for="edit-username">Username</label>
+      <input type="text" id="edit-username" placeholder="Enter username">
+      <p id="username-lock-note">Username can only be changed once every 7 days.</p>
+
       <div class="profile-actions">
         <button id="save-profile">Save</button>
         <button id="cancel-edit">Cancel</button>
       </div>
     </div>
+
   </div>
 </div>
 
