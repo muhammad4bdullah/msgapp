@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Link Chat App</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Link Chat App</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <!-- LOGIN OVERLAY -->
 <div id="login-overlay">
   <div class="login-card">
-    <h2>Login to Chat</h2>
+    <h2>Login to Link Chat</h2>
     <button id="google-login-btn">Login with Google</button>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- MAIN APP GRID -->
 <div class="app-grid hidden">
 
   <!-- LEFT PANEL -->
@@ -28,7 +28,7 @@
           <div class="title">Link Chat</div>
           <div class="subtitle">Your Rooms</div>
         </div>
-      </div> 
+      </div>
     </div>
 
     <!-- ROOM CONTROLS -->
@@ -42,8 +42,9 @@
       <p id="link-display"></p>
     </div>
 
+    <!-- CHATS LIST -->
     <div class="chats-list" id="chats-list"></div>
-    <div class="left-footer"><p id="chats-left">Loading...</p></div>
+    <div class="left-footer"><p id="chats-left">Loading chats...</p></div>
   </div>
 
   <!-- MAIN CHAT AREA -->
@@ -70,13 +71,16 @@
       </div>
     </div>
   </div>
+
 </div>
 
 <!-- PROFILE MODAL -->
 <div class="modal hidden" id="profile-modal">
   <div class="modal-card">
-    <!-- VIEW MODE -->
+
+    <!-- VIEW PROFILE -->
     <div id="profile-view">
+      <h3>Profile</h3>
       <img id="view-pfp" src="" alt="avatar">
       <p id="view-nickname"></p>
       <p id="view-username"></p>
@@ -84,10 +88,12 @@
       <p id="view-bio"></p>
       <div id="view-admin-actions"></div>
       <button id="close-profile-view">Close</button>
+      <button id="edit-profile-btn">Edit Profile</button>
     </div>
 
-    <!-- EDIT MODE -->
+    <!-- EDIT PROFILE -->
     <div id="profile-edit" class="hidden">
+      <h3>Edit Profile</h3>
       <input type="text" id="edit-nickname" placeholder="Set nickname">
       <input type="text" id="edit-username" placeholder="Set username">
       <input type="file" id="edit-avatar" accept="image/*">
@@ -97,10 +103,10 @@
         <button id="cancel-edit">Cancel</button>
       </div>
     </div>
+
   </div>
 </div>
 
 <script type="module" src="app.js"></script>
 </body>
 </html>
-
