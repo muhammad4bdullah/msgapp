@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Link Chat App</title>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -16,22 +16,19 @@
   </div>
 </div>
 
-<!-- Main App -->
+<!-- App Grid -->
 <div class="app-grid hidden">
 
   <!-- Left Column -->
   <div class="left-col">
-    <div class="left-header">
-      <div class="brand">
-        <div class="logo">💬</div>
-        <div class="brand-text">
-          <div class="title">Link Chat</div>
-          <div class="subtitle">Your Rooms</div>
-        </div>
+    <div class="brand">
+      <div class="logo">💬</div>
+      <div class="brand-text">
+        <div class="title">Link Chat</div>
+        <div class="subtitle">Your Rooms</div>
       </div>
     </div>
 
-    <!-- Chat Controls -->
     <div class="room-controls">
       <button id="create-chat">Create Chat</button>
       <input type="text" id="room-id" placeholder="Room ID">
@@ -46,16 +43,12 @@
     <div class="left-footer"><p id="chats-left">Loading...</p></div>
   </div>
 
-  <!-- Main Chat Area -->
+  <!-- Main Column -->
   <div class="main-col">
     <div class="topbar">
-      <div class="top-left">
-        <span class="room-title" id="room-title">Select a Chat</span>
-      </div>
+      <span class="room-title" id="room-title">Select a Chat</span>
       <div class="top-right">
-        <div class="profile-btn" id="profile-btn" title="Open profile">
-          <img src="" class="avatar" id="profile-avatar" alt="avatar">
-        </div>
+        <img id="profile-avatar" class="avatar" title="Your Profile">
         <button id="logout-btn">Log Out</button>
       </div>
     </div>
@@ -70,28 +63,39 @@
       </div>
     </div>
   </div>
+
 </div>
 
 <!-- Profile Modal -->
-<div class="modal hidden" id="profile-modal">
+<div id="profile-modal" class="modal hidden">
   <div class="modal-card">
-    <h3>Profile</h3>
-    <input type="text" id="edit-nickname" placeholder="Set nickname">
-    <input type="text" id="edit-username" placeholder="Set username">
-    <input type="file" id="edit-avatar" accept="image/*">
-    <p id="username-lock-note"></p>
-    <div class="profile-actions">
-      <button id="save-profile">Save</button>
-      <button id="cancel-edit">Cancel</button>
-    </div>
-    <div id="profile-view" class="hidden">
+    <!-- Close -->
+    <button id="close-profile-view" class="close-btn">✖</button>
+
+    <!-- View Mode -->
+    <div id="profile-view">
       <img id="view-pfp" src="" alt="avatar">
-      <p id="view-nickname"></p>
+      <h3 id="view-nickname"></h3>
       <p id="view-username"></p>
       <p id="view-role"></p>
       <p id="view-bio"></p>
       <div id="view-admin-actions"></div>
-      <button id="close-profile-view">Close</button>
+      <button id="edit-profile-btn" class="hidden">Edit</button>
+    </div>
+
+    <!-- Edit Mode -->
+    <div id="profile-edit" class="hidden">
+      <label>Nickname:</label>
+      <input type="text" id="edit-nickname" placeholder="Nickname">
+      <label>Username:</label>
+      <input type="text" id="edit-username" placeholder="Username">
+      <label>Avatar URL:</label>
+      <input type="text" id="edit-avatar" placeholder="Avatar URL">
+      <p id="username-lock-note"></p>
+      <div class="profile-actions">
+        <button id="save-profile">Save</button>
+        <button id="cancel-edit">Cancel</button>
+      </div>
     </div>
   </div>
 </div>
