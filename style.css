@@ -187,14 +187,35 @@ button { cursor: pointer; }
 }
 
 /* MODAL */
+
+/* ---- PROFILE MODAL AVATAR ---- */
+#view-pfp {
+  width: 80px;
+  height: 80px;
+  max-width: 80px;
+  max-height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 12px auto;
+  display: block;
+}
+
+
 .modal {
   position: fixed; inset:0;
   display:flex; justify-content:center; align-items:center;
   background:rgba(0,0,0,0.7); z-index:999;
 }
 .modal-card {
-  background: var(--panel); padding:30px; border-radius:16px;
-  width: 360px; max-width:90%; display:flex; flex-direction:column; gap:12px;
+  width: 360px;
+  max-width: 90%;
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 }
 .modal-card input { padding:10px; border-radius:10px; border:none; outline:none; background:rgba(255,255,255,0.05); color:var(--text); }
 .profile-actions { display:flex; gap:10px; justify-content:flex-end; }
@@ -212,4 +233,10 @@ button { cursor: pointer; }
   .main-col { flex:1; }
   .composer { flex-direction:column; gap:6px; }
   .composer button { width:100%; }
+    .modal-card {
+    width: 90%;
+    padding: 15px;
+  }
+  
 }
+
