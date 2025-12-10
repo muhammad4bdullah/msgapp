@@ -1,304 +1,347 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { 
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { 
-  getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, onSnapshot, updateDoc 
-} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
+// app.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, set, push, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// ===== FIREBASE CONFIG =====
+// --- Firebase config ---
 const firebaseConfig = {
   apiKey: "AIzaSyAEWxTJ1loQkXM1ShwAAF1J15RQLlCgdGM",
   authDomain: "msgapp-262c9.firebaseapp.com",
   projectId: "msgapp-262c9",
   storageBucket: "msgapp-262c9.appspot.com",
   messagingSenderId: "122648836940",
-  appId: "1:122648836940:web:a098c052f65f3eb305ade9"
+  appId: "1:122648836940:web:a098c052f65f3eb305ade9",
+  databaseURL: "https://msgapp-262c9-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const db = getFirestore(app);
-const storage = getStorage(app);
+const auth = getAuth(app);
+const db = getDatabase(app);
 const provider = new GoogleAuthProvider();
 
-// ===== DOM ELEMENTS =====
-const loginOverlay = document.getElementById("login-overlay");
-const googleLoginBtn = document.getElementById("google-login-btn");
-const appGrid = document.querySelector(".app-grid");
-const topAvatar = document.getElementById("profile-avatar");
-const messagesContainer = document.getElementById("messages");
-const messageInput = document.getElementById("message-input");
-const sendBtn = document.getElementById("send-btn");
-const joinRoomBtn = document.getElementById("join-room");
-const createRoomBtn = document.getElementById("create-room");
-const roomNameInput = document.getElementById("room-name");
-const roomPassInput = document.getElementById("room-pass");
-const logoutBtn = document.getElementById("logout-btn");
-const profileModal = document.getElementById("profile-modal");
-const viewPfp = document.getElementById("view-pfp");
-const viewUsername = document.getElementById("view-username");
-const viewNickname = document.getElementById("view-nickname");
-const viewRole = document.getElementById("view-role");
-const editUsernameInput = document.getElementById("edit-username");
-const editNicknameInput = document.getElementById("edit-nickname");
-const editAvatarInput = document.getElementById("edit-avatar");
-const saveProfileBtn = document.getElementById("save-profile");
-const profileBtn = document.getElementById("profile-btn");
-const closeProfileBtn = document.getElementById("close-profile-view");
-const cancelEditBtn = document.getElementById("cancel-edit");
-const profileViewDiv = document.getElementById("profile-view");
-const profileEditDiv = document.getElementById("profile-edit");
-const chatsListDiv = document.getElementById("chats-list");
-
 let currentUser = null;
-let currentRoom = null;
-let isAdmin = false;
+let activeRoom = null;
 
-// ===== ADMIN UID =====
-const ADMIN_UID = "YOUR_ADMIN_UID_HERE"; // Replace with your Firebase UID
+// --- UI elements ---
+const loginScreen = document.getElementById("login-screen");
+const mainScreen = document.getElementById("main");
+const googleLoginBtn = document.getElementById("googleLogin");
+const userPhoto = document.getElementById("userPhoto");
+const userNameDisplay = document.getElementById("userNameDisplay");
+const userEmail = document.getElementById("userEmail");
+const btnLogout = document.getElementById("btnLogout");
 
-// ===== GOOGLE LOGIN =====
-googleLoginBtn.addEventListener("click", async () => {
+const editNicknameInput = document.getElementById("editNickname");
+const editPhotoInput = document.getElementById("editPhoto");
+const btnSaveProfile = document.getElementById("btnSaveProfile");
+
+const btnShowCreate = document.getElementById("btnShowCreate");
+const btnShowJoin = document.getElementById("btnShowJoin");
+const createRoomSection = document.getElementById("createRoomSection");
+const joinRoomSection = document.getElementById("joinRoomSection");
+const btnCreate = document.getElementById("btnCreate");
+const btnJoin = document.getElementById("btnJoin");
+const roomPASScreate = document.getElementById("roomPASScreate");
+const roomNameCreate = document.getElementById("roomNameCreate");
+const roomIDjoin = document.getElementById("roomIDjoin");
+const roomPASSjoin = document.getElementById("roomPASSjoin");
+
+const roomListEl = document.getElementById("roomList");
+const noRooms = document.getElementById("noRooms");
+const chatHeader = document.getElementById("chatHeader");
+const messagesEl = document.getElementById("messages");
+const msgInput = document.getElementById("msgInput");
+const sendMsg = document.getElementById("sendMsg");
+const roomInfoEl = document.getElementById("roomInfo");
+
+// Profile modal elements
+const profileModal = document.getElementById("profileModal");
+const modalPhoto = document.getElementById("modalPhoto");
+const modalNickname = document.getElementById("modalNickname");
+const modalPhotoURL = document.getElementById("modalPhotoURL");
+const modalDOB = document.createElement("input");
+modalDOB.type = "date";
+modalDOB.id = "modalDOB";
+modalDOB.placeholder = "Date of Birth";
+modalDOB.style.width = "100%";
+modalDOB.style.padding = "6px 8px";
+modalDOB.style.borderRadius = "6px";
+modalDOB.style.border = "none";
+modalDOB.style.background = "#051017";
+modalDOB.style.color = "#eaf3f5";
+profileModal.querySelector(".panel").insertBefore(modalDOB, profileModal.querySelector("#modalSaveProfile"));
+
+const modalSave = document.getElementById("modalSaveProfile");
+const modalClose = document.getElementById("modalClose");
+const editNickToggle = document.getElementById("editNickToggle");
+const editPhotoToggle = document.getElementById("editPhotoToggle");
+
+// --- Auth handlers ---
+googleLoginBtn.onclick = () => signInWithPopup(auth, provider).catch(err => alert(err.message || err));
+btnLogout.onclick = () => signOut(auth).catch(console.error);
+
+// --- Profile save (top bar) ---
+btnSaveProfile.onclick = async () => {
+  if (!currentUser) return;
+  const nickname = editNicknameInput.value.trim() || currentUser.displayName || "User";
+  const photoURL = editPhotoInput.value.trim() || currentUser.photoURL || "";
   try {
-    const result = await signInWithPopup(auth, provider);
-    currentUser = result.user;
-    isAdmin = currentUser.uid === ADMIN_UID;
-    loginOverlay.classList.add("hidden");
-    appGrid.classList.remove("hidden");
-    topAvatar.src = currentUser.photoURL || "";
-    await ensureUserProfile();
-    loadUserRooms();
-  } catch (err) {
-    alert("Login failed: " + err.message);
-    console.error(err);
-  }
-});
+    await updateProfile(currentUser, { displayName: nickname, photoURL });
+    await update(ref(db, `users/${currentUser.uid}`), { displayName: nickname, photoURL });
+    userNameDisplay.innerText = nickname;
+    userPhoto.src = photoURL || "";
+    alert("Profile updated!");
+  } catch(err) { console.error(err); alert("Failed to update profile"); }
+};
 
-// ===== ENSURE USER PROFILE =====
-async function ensureUserProfile() {
-  const userRef = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) {
-    await setDoc(userRef, {
-      username: currentUser.displayName,
-      nickname: "",
-      avatar: currentUser.photoURL || "",
-      isAdmin,
-      lastUsernameChange: 0,
-      roomsCreatedToday: 0,
-      lastRoomCreationDay: 0
-    });
-  }
-}
-
-// ===== SEND MESSAGE =====
-sendBtn.addEventListener("click", async () => {
-  if (!currentRoom) return alert("Join a room first!");
-  const text = messageInput.value.trim();
-  if (!text) return;
-  const roomRef = collection(db, "rooms", currentRoom, "messages");
-  await addDoc(roomRef, {
-    text,
-    uid: currentUser.uid,
-    username: currentUser.displayName,
-    avatar: currentUser.photoURL,
-    timestamp: Date.now(),
-    isAdmin
+// --- Profile modal handlers ---
+userPhoto.onclick = () => {
+  if (!currentUser) return;
+  profileModal.classList.add("show");
+  modalPhoto.src = currentUser.photoURL || "";
+  modalNickname.value = currentUser.displayName || "User";
+  modalPhotoURL.value = currentUser.photoURL || "";
+  get(ref(db, `users/${currentUser.uid}/dob`)).then(snap => {
+    modalDOB.value = snap.exists() ? snap.val() : "";
   });
-  messageInput.value = "";
-});
+};
 
-// ===== CREATE ROOM =====
-createRoomBtn.addEventListener("click", async () => {
-  const roomName = roomNameInput.value.trim() || generateRandomName();
-  const roomPass = roomPassInput.value.trim() || generateRandomPass();
-  
-  // Check daily limit for normal users
-  const userRef = doc(db, "users", currentUser.uid);
-  const userSnap = await getDoc(userRef);
-  const userData = userSnap.data();
-  const today = new Date().toDateString();
-  
-  if (!isAdmin) {
-    if (userData.lastRoomCreationDay !== today) {
-      await updateDoc(userRef, { roomsCreatedToday: 0, lastRoomCreationDay: today });
-      userData.roomsCreatedToday = 0;
-    }
-    if (userData.roomsCreatedToday >= 10) return alert("Daily room creation limit reached");
-  }
+modalClose.onclick = () => profileModal.classList.remove("show");
+modalSave.onclick = async () => {
+  if (!currentUser) return;
+  const nickname = modalNickname.value.trim() || "User";
+  const photoURL = modalPhotoURL.value.trim() || "";
+  const dob = modalDOB.value || "";
+  try {
+    await updateProfile(currentUser, { displayName: nickname, photoURL });
+    await update(ref(db, `users/${currentUser.uid}`), { displayName: nickname, photoURL, dob });
+    userNameDisplay.innerText = nickname;
+    userPhoto.src = photoURL || "";
+    profileModal.classList.remove("show");
+    alert("Profile updated!");
+  } catch(err) { console.error(err); alert("Failed to update profile"); }
+};
 
-  const roomRefDoc = doc(db, "rooms", roomName);
-  const snap = await getDoc(roomRefDoc);
-  if (snap.exists()) return alert("Room already exists");
+// --- Toggle sections ---
+btnShowCreate.onclick = () => {
+  createRoomSection.classList.toggle("hidden");
+  joinRoomSection.classList.add("hidden");
+  roomPASScreate.value = "";
+  roomNameCreate.value = "";
+  roomPASScreate.focus();
+};
+btnShowJoin.onclick = () => {
+  joinRoomSection.classList.toggle("hidden");
+  createRoomSection.classList.add("hidden");
+  roomIDjoin.value = "";
+  roomPASSjoin.value = "";
+  roomIDjoin.focus();
+};
 
-  await setDoc(roomRefDoc, {
-    createdAt: Date.now(),
-    creator: currentUser.uid,
-    password: roomPass
-  });
-
-  if (!isAdmin) await updateDoc(userRef, { roomsCreatedToday: userData.roomsCreatedToday + 1, lastRoomCreationDay: today });
-
-  joinRoom(roomName);
-  loadUserRooms();
-});
-
-// ===== JOIN ROOM =====
-joinRoomBtn.addEventListener("click", async () => {
-  const roomName = roomNameInput.value.trim();
-  if (!roomName) return alert("Enter room name to join");
-  joinRoom(roomName);
-});
-
-// ===== JOIN ROOM FUNCTION =====
-async function joinRoom(roomName) {
-  currentRoom = roomName;
-  messagesContainer.innerHTML = "";
-  const roomRef = collection(db, "rooms", roomName, "messages");
-  const q = query(roomRef, orderBy("timestamp"));
-  
-  onSnapshot(q, (snapshot) => {
-    messagesContainer.innerHTML = "";
-    snapshot.forEach(docSnap => displayMessage(docSnap.data()));
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  });
-}
-
-// ===== DISPLAY MESSAGE =====
-function displayMessage(msg) {
-  const div = document.createElement("div");
-  div.classList.add("message", msg.uid === currentUser.uid ? "mine" : "theirs");
-  let usernameBadge = msg.username;
-  if (msg.isAdmin) usernameBadge += ' <span class="admin-crown">★</span>';
-  div.innerHTML = `
-    <div class="msg-info">
-      <img src="${msg.avatar}" alt="${msg.username}">
-      <strong>${usernameBadge}</strong>
-    </div>
-    <div>${msg.text}</div>
-  `;
-  messagesContainer.appendChild(div);
-}
-
-// ===== PROFILE MODAL =====
-profileBtn.addEventListener("click", async () => {
-  profileModal.classList.remove("hidden");
-  const userRef = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(userRef);
-  const data = snap.data();
-  viewPfp.src = data.avatar || "";
-  viewUsername.textContent = data.username;
-  viewNickname.textContent = data.nickname || "";
-  viewRole.textContent = data.isAdmin ? "Admin" : "User";
-});
-
-closeProfileBtn.addEventListener("click", () => profileModal.classList.add("hidden"));
-cancelEditBtn.addEventListener("click", () => {
-  profileEditDiv.classList.add("hidden");
-  profileViewDiv.classList.remove("hidden");
-});
-
-// ===== SAVE PROFILE =====
-saveProfileBtn.addEventListener("click", async () => {
-  const newUsername = editUsernameInput.value.trim();
-  const newNickname = editNicknameInput.value.trim();
-  let avatarUrl = currentUser.photoURL;
-
-  if (editAvatarInput.files.length > 0) {
-    const file = editAvatarInput.files[0];
-    const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-    await uploadBytes(storageRef, file);
-    avatarUrl = await getDownloadURL(storageRef);
-  }
-
-  const userRef = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(userRef);
-  const data = snap.data();
-  const fifteenDays = 1000*60*60*24*15;
-
-  if (newUsername && Date.now() - data.lastUsernameChange < fifteenDays) {
-    alert("Username can only be changed once every 15 days");
-    return;
-  }
-
-  await updateDoc(userRef, {
-    username: newUsername || data.username,
-    nickname: newNickname,
-    avatar: avatarUrl,
-    lastUsernameChange: newUsername ? Date.now() : data.lastUsernameChange
-  });
-
-  alert("Profile updated!");
-  profileEditDiv.classList.add("hidden");
-  profileViewDiv.classList.remove("hidden");
-});
-
-// ===== LOGOUT =====
-logoutBtn.addEventListener("click", () => signOut(auth).then(() => location.reload()));
-
-// ===== AUTH STATE =====
-onAuthStateChanged(auth, (user) => {
+// --- Auth state ---
+onAuthStateChanged(auth, async user => {
   if (user) {
     currentUser = user;
-    isAdmin = currentUser.uid === ADMIN_UID;
-    loginOverlay.classList.add("hidden");
-    appGrid.classList.remove("hidden");
-    topAvatar.src = currentUser.photoURL || "";
-    ensureUserProfile();
-    loadUserRooms();
+    loginScreen.style.display = "none";
+    mainScreen.style.display = "block";
+
+    userPhoto.src = user.photoURL || "";
+    userNameDisplay.innerText = user.displayName || "User";
+    userEmail.innerText = user.email || "";
+
+    editNicknameInput.value = user.displayName || "User";
+    editPhotoInput.value = user.photoURL || "";
+
+    await set(ref(db, `users/${user.uid}`), {
+      uid: user.uid,
+      displayName: user.displayName || "User",
+      email: user.email || "",
+      photoURL: user.photoURL || "",
+      lastLogin: Date.now()
+    });
+
+    loadRooms();
+    createRoomSection.classList.add("hidden");
+    joinRoomSection.classList.add("hidden");
   } else {
-    loginOverlay.classList.remove("hidden");
-    appGrid.classList.add("hidden");
+    currentUser = null;
+    loginScreen.style.display = "block";
+    mainScreen.style.display = "none";
+    clearUI();
   }
 });
 
-// ===== LOAD USER ROOMS =====
-async function loadUserRooms() {
-  chatsListDiv.innerHTML = "";
-  const roomsSnap = await getDoc(doc(db, "users", currentUser.uid));
-  const roomsData = roomsSnap.data();
+// --- Room creation ---
+function randomRoomID() { return Math.random().toString(36).substring(2,8).toUpperCase(); }
 
-  // Load all rooms (you can add join info or history)
-  const roomsCol = collection(db, "rooms");
-  onSnapshot(roomsCol, (snapshot) => {
-    chatsListDiv.innerHTML = "";
-    snapshot.forEach(docSnap => {
-      const r = docSnap.data();
-      const roomDiv = document.createElement("div");
-      roomDiv.style.padding = "8px";
-      roomDiv.style.marginBottom = "6px";
-      roomDiv.style.background = "rgba(255,255,255,0.05)";
-      roomDiv.style.borderRadius = "8px";
-      roomDiv.style.cursor = "pointer";
-      roomDiv.innerHTML = `
-        <strong>${docSnap.id}</strong>
-        <br>
-        <small>Creator: ${r.creator}</small>
-        <br>
-        <small>Password: ${r.password || "None"}</small>
-        <button style="margin-top:4px;">Join</button>
-        <button style="margin-top:4px;">Copy Link</button>
-      `;
-      const joinBtn = roomDiv.querySelector("button:nth-child(4)");
-      joinBtn.addEventListener("click", () => joinRoom(docSnap.id));
+btnCreate.onclick = async () => {
+  if (!currentUser) { alert("Login first"); return; }
 
-      const copyBtn = roomDiv.querySelector("button:nth-child(5)");
-      copyBtn.addEventListener("click", () => {
-        navigator.clipboard.writeText(`${window.location.href}?room=${docSnap.id}`);
-        alert("Room link copied!");
-      });
+  let pass = roomPASScreate.value.trim();
+  if (!/^\d{6,}$/.test(pass)) {
+    pass = prompt("Enter a 6-digit numeric room password:");
+    if (!pass || !/^\d{6,}$/.test(pass)) { alert("Invalid password"); return; }
+  }
 
-      chatsListDiv.appendChild(roomDiv);
+  const id = randomRoomID();
+  const name = roomNameCreate.value.trim() || "Unnamed Room";
+  const roomURL = `${window.location.origin}${window.location.pathname}?room=${id}`;
+
+  try {
+    await set(ref(db, `rooms/${id}`), { name, pass, createdBy: currentUser.uid, createdAt: Date.now(), roomURL });
+    await set(ref(db, `members/${id}/${currentUser.uid}`), true);
+
+    roomPASScreate.value = "";
+    roomNameCreate.value = "";
+    loadRooms();
+    openRoom(id);
+    showRoomInfo(id, name, pass, roomURL);
+  } catch(err) { console.error(err); alert("Failed to create room"); }
+};
+
+// --- Join room ---
+btnJoin.onclick = async () => {
+  if (!currentUser) { alert("Login first"); return; }
+
+  const id = roomIDjoin.value.trim().toUpperCase();
+  const pass = roomPASSjoin.value.trim();
+  if (!id || !pass) { alert("Enter Room ID & Pass"); return; }
+
+  try {
+    const snap = await get(ref(db, `rooms/${id}`));
+    if (!snap.exists()) { alert("Room not found"); return; }
+    if ((snap.val().pass || "") !== pass) { alert("Wrong password"); return; }
+
+    await set(ref(db, `members/${id}/${currentUser.uid}`), true);
+    roomIDjoin.value = "";
+    roomPASSjoin.value = "";
+    openRoom(id);
+
+    const { name, roomURL } = snap.val();
+    showRoomInfo(id, name, pass, roomURL);
+  } catch(err) { console.error(err); alert("Failed to join room"); }
+};
+
+// --- Show room info ---
+function showRoomInfo(id, name, pass, url) {
+  roomInfoEl.innerHTML = `
+    <div><b>Room Name:</b> ${name}</div>
+    <div><b>Room ID:</b> ${id}</div>
+    <div><b>Pass:</b> ${pass}</div>
+    <div><b>Link:</b> <input type="text" value="${url}" readonly style="width:200px;"> <button onclick="copyRoomLink()">Copy</button></div>
+  `;
+}
+
+// --- Load rooms ---
+function loadRooms() {
+  if (!currentUser) return;
+  onValue(ref(db, "members"), snap => {
+    roomListEl.innerHTML = "";
+    let found = false;
+    snap.forEach(roomSnap => {
+      if (roomSnap.child(currentUser.uid).exists()) {
+        found = true;
+        const id = roomSnap.key;
+        get(ref(db, `rooms/${id}`)).then(roomSnapData => {
+          const roomName = roomSnapData.exists() ? roomSnapData.val().name : id;
+          const btn = document.createElement("button");
+          btn.textContent = `${roomName} (${id})`;
+          btn.onclick = () => openRoom(id);
+          roomListEl.appendChild(btn);
+        });
+      }
     });
+    noRooms.classList.toggle("hidden", found);
   });
 }
 
-// ===== RANDOM GENERATORS =====
-function generateRandomName() {
-  return Math.random().toString(36).substring(2, 8);
+// --- Open & listen ---
+window.openRoom = function(room){
+  activeRoom = room;
+  get(ref(db, `rooms/${room}`)).then(snap => {
+    const name = snap.exists() ? snap.val().name : room;
+    chatHeader.innerText = `Room: ${name}`;
+  });
+  messagesEl.innerHTML = `<div class="muted center">Loading messages...</div>`;
+  listenRoom(room);
+};
+
+function listenRoom(room) {
+  if (!room) return;
+  const messagesRef = ref(db, `messages/${room}`);
+  onValue(messagesRef, snap => {
+    messagesEl.innerHTML = "";
+    if (!snap.exists()) {
+      messagesEl.innerHTML = `<div class="muted center">No messages yet</div>`;
+      return;
+    }
+    snap.forEach(m => {
+      const d = m.val();
+      const wrapper = document.createElement("div");
+      wrapper.className = `message ${d.uid === currentUser.uid ? "mine" : ""}`;
+
+      const img = document.createElement("img");
+      img.src = d.photoURL || "";
+      img.alt = d.nickname || "user";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+
+      const nameDiv = document.createElement("div");
+      nameDiv.className = "msg-name";
+      nameDiv.textContent = d.nickname || "User";
+
+      const textDiv = document.createElement("div");
+      textDiv.textContent = d.text || "";
+      textDiv.style.whiteSpace = "pre-wrap";
+
+      const timeDiv = document.createElement("div");
+      timeDiv.className = "msg-time";
+      timeDiv.textContent = d.time ? new Date(d.time).toLocaleString() : "";
+
+      bubble.appendChild(nameDiv);
+      bubble.appendChild(textDiv);
+      bubble.appendChild(timeDiv);
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(bubble);
+
+      messagesEl.appendChild(wrapper);
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
 }
-function generateRandomPass() {
-  return Math.floor(1000 + Math.random()*9000).toString();
+
+// --- Send message ---
+sendMsg.onclick = sendMessage;
+msgInput.addEventListener("keydown", e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+function sendMessage() {
+  if (!currentUser || !activeRoom) return;
+  const t = msgInput.value.trim();
+  if (!t) return;
+  msgInput.value = "";
+  push(ref(db, `messages/${activeRoom}`), {
+    uid: currentUser.uid,
+    nickname: currentUser.displayName || "User",
+    photoURL: currentUser.photoURL || "",
+    text: t,
+    time: Date.now()
+  });
 }
+
+// --- Helpers ---
+function clearUI() {
+  roomListEl.innerHTML = "";
+  messagesEl.innerHTML = `<div class="muted center">Select a room to start chatting</div>`;
+  chatHeader.innerText = "No Room Selected";
+  roomInfoEl.innerHTML = "";
+  noRooms.classList.remove("hidden");
+}
+
+// --- Copy room link ---
+window.copyRoomLink = () => {
+  const input = roomInfoEl.querySelector("input");
+  input.select();
+  document.execCommand("copy");
+  alert("Room link copied!");
+};
