@@ -1,4 +1,4 @@
-/* Base */
+/* ====================== BASE STYLES ====================== */
 * {
   margin: 0;
   padding: 0;
@@ -27,7 +27,7 @@ body {
 
 .hidden { display: none; }
 
-/* Login */
+/* ====================== LOGIN SCREEN ====================== */
 .screen {
   display: flex;
   align-items: center;
@@ -83,15 +83,19 @@ button {
 .muted { color: var(--muted); }
 .center { text-align: center; }
 
-/* Profile Bar */
+/* ====================== PROFILE BAR ====================== */
 #profileBar {
   display: flex;
   align-items: center;
+  justify-content: flex-start; /* left-aligned */
   gap: 12px;
   padding: 12px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   background: linear-gradient(90deg, var(--panel), var(--glass));
+  text-align: left;
 }
+
+#profileBar .spacer { display: none; }
 
 #profileBar img {
   width: 48px;
@@ -102,7 +106,19 @@ button {
   cursor: pointer;
 }
 
-/* Layout */
+#profileBar .profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+#profileBar .username,
+#profileBar .muted {
+  text-align: left;
+}
+
+/* ====================== LAYOUT ====================== */
 #appContainer {
   display: flex;
   gap: 14px;
@@ -129,7 +145,7 @@ button {
   overflow: hidden;
 }
 
-/* Sidebar */
+/* ====================== SIDEBAR ====================== */
 .sidebar-actions {
   display: flex;
   gap: 8px;
@@ -179,7 +195,7 @@ button {
   background: linear-gradient(90deg, rgba(37,211,102,0.08), rgba(30,190,87,0.04));
 }
 
-/* Chat Header */
+/* ====================== CHAT HEADER ====================== */
 #chatHeader {
   padding: 12px 16px;
   background: rgba(0,0,0,0.25);
@@ -187,7 +203,7 @@ button {
   font-weight: 700;
 }
 
-/* Messages container */
+/* ====================== MESSAGES ====================== */
 .messages {
   flex: 1;
   padding: 16px;
@@ -195,28 +211,27 @@ button {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 50px;
 }
 
-/* Message row full width */
 .message {
   display: flex;
   width: 100%;
-  align-items: flex-end;
+  align-items: flex-start; /* avatar aligns to top of bubble */
   gap: 8px;
 }
 
-/* Avatar */
 .msg-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  margin-top: 0; /* ensure top alignment */
 }
 
-/* Bubble */
 .bubble {
-  background: rgba(255,255,255,0.08);
+  background: rgba(37, 211, 102, 0.15);
   color: #e8f0f2;
   padding: 6px 10px;
   border-radius: 16px;
@@ -229,7 +244,6 @@ button {
   max-width: 320px;
 }
 
-/* Name & time */
 .msg-name {
   font-size: 12px;
   font-weight: 600;
@@ -242,41 +256,54 @@ button {
   align-self: flex-end;
 }
 
-/* Opponent messages (left) */
+/* ====================== OPPONENT MESSAGES ====================== */
 .message:not(.mine) {
   justify-content: flex-start;
 }
 
+/* Opponent message bubble different color */
+.message:not(.mine) .bubble {
+  background: rgba(59, 130, 246, 0.15); /* light blue for opponent */
+  color: #e8f0f2;
+}
+
+
+
 .message:not(.mine) .msg-avatar {
   order: 0;
   margin-right: 4px;
+  margin-top: 0;
 }
 
-/* Your messages (right) with avatar on right */
+/* ====================== YOUR MESSAGES ====================== */
 .mine {
   justify-content: flex-end;
 }
 
 .mine .bubble {
-  background: rgba(255,255,255,0.08);
+  background: rgba(37, 211, 102, 0.25);
   color: #e8f0f2;
   min-width: 120px;
   max-width: 320px;
 }
 
 .mine .msg-avatar {
-  order: 1;           /* avatar appears after bubble */
-  margin-left: 4px;   /* spacing between bubble and avatar */
+  order: 1;
+  margin-left: 4px;
+  margin-top: 0;
 }
 
-/* Chat bottom */
+/* ====================== CHAT BOTTOM ====================== */
 #chatBottom {
   display: flex;
   padding: 12px;
   gap: 10px;
   background: rgba(0,0,0,0.12);
   border-top: 1px solid rgba(255,255,255,0.02);
+  position: relative; /* ADD THIS */
+  align-items: center; /* vertical center input + button */
 }
+
 
 #msgInput {
   flex: 1;
@@ -287,7 +314,129 @@ button {
   color: #eaf3f5;
 }
 
-/* Profile Modal */
+/* ====================== ATTACHMENT BUTTON ====================== */
+/* ====================== ATTACHMENT MENU UPDATED ====================== */
+.attachment-menu {
+  position: absolute;
+  bottom: 45px; /* slightly above the button */
+  right: 0;     /* aligns to the right of attachment button */
+  flex-direction: column;
+  background: #1b2630; /* darker, cooler color */
+  border-radius: 12px;
+  padding: 8px 0;
+  min-width: 180px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  z-index: 1000;
+
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: all 0.25s ease-in-out;
+}
+
+.attachment-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.attachment-menu button {
+  background: transparent;
+  border: none;
+  padding: 12px 18px;
+  width: 100%;
+  text-align: left;
+  color: #dce3e8; /* slightly brighter text */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.attachment-menu button:hover {
+  background: #2e3b48; /* subtle hover highlight */
+  color: #25d366;      /* match accent color on hover */
+  transform: translateX(4px); /* tiny slide effect */
+  border-radius: 8px;
+}
+
+
+.attachment-menu button:first-child { border-top-left-radius:10px; border-top-right-radius:10px; }
+.attachment-menu button:last-child  { border-bottom-left-radius:10px; border-bottom-right-radius:10px; }
+
+.attachment-menu button:hover { background: rgba(37,211,102,0.15); }
+
+
+
+
+
+
+
+
+
+/* ====================== PROFILE BAR ====================== */
+#profileBar {
+  display: flex;
+  align-items: center;      /* vertical alignment */
+  justify-content: flex-start; /* align avatar + text to left */
+  gap: 12px;
+  padding: 12px 20px;
+}
+
+#profileBar .profile-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* vertical top alignment */
+  align-items: flex-start;     /* horizontal left alignment */
+  text-align: left;            /* make sure text stays left */
+  gap: 2px;
+}
+
+
+
+
+
+#profileBar img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+
+#profileBar .username {
+  font-weight: 600;
+  color: #e8f0f2;
+  font-size: 16px;
+}
+
+#profileBar .muted {
+  font-size: 12px;
+  color: #aaa;
+}
+
+#profileBar .spacer {
+  display: none; /* not needed */
+}
+
+#profileBar button {
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  margin-left: auto; /* push logout button to right */
+}
+
+#profileBar button:hover {
+  background: rgba(37,211,102,0.08);
+}
+
+/* ====================== PROFILE MODAL ====================== */
 #profileModal {
   display: none;
   position: fixed;
@@ -307,6 +456,7 @@ button {
 }
 
 #profileModal .panel {
+  position: relative;
   background: var(--panel);
   padding: 20px;
   border-radius: 12px;
@@ -314,6 +464,24 @@ button {
   color: #e8f0f2;
   box-shadow: 0 8px 25px rgba(0,0,0,0.6);
 }
+
+/* Center only the avatar */
+#modalPhoto {
+  display: block;
+  margin: 0 auto;  /* centers the avatar horizontally */
+  cursor: pointer;
+}
+
+/* Center ONLY the avatar in profile modal */
+.modal-avatar {
+  text-align: center; /* centers avatar wrapper */
+}
+
+.modal-avatar .avatar-wrapper {
+  display: inline-block; /* allows centering */
+}
+
+
 
 .close {
   position: absolute;
@@ -332,6 +500,10 @@ button {
   border: 2px solid var(--accent);
   cursor: pointer;
   margin-bottom: 6px;
+
+  display: block;
+  margin: 0 auto;  /* centers horizontally */
+
 }
 
 .modal-avatar p {
@@ -376,18 +548,32 @@ button {
   background: var(--accent-2);
 }
 
+/* ====================== ANIMATIONS ====================== */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
+/* ====================== RESPONSIVE ====================== */
+@media(max-width:880px) {
+  #profileBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  #profileBar button {
+    align-self: flex-end;
+  }
+}
+
+
+/* ====================== MEDIA QUERIES ====================== */
 @media(max-width:880px) {
   #sidebar { display: none; }
   #appContainer { padding: 8px; }
 }
 
-
-/* ------------------------ ROOM INFO BAR FIXED ------------------------ */
+/* ====================== ROOM INFO BAR ====================== */
 #roomInfo {
   position: sticky;
   top: 0;
@@ -400,7 +586,6 @@ button {
   gap: 4px;
 }
 
-/* Room info input & copy button styling */
 #roomInfo input {
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
@@ -425,7 +610,7 @@ button {
   background: rgba(37,211,102,0.25);
 }
 
-/* ------------------------ FILTER BUTTONS ------------------------ */
+/* ====================== FILTER BUTTONS ====================== */
 #filterAll, #filterCreated, #filterJoined {
   background: rgba(255,255,255,0.08);
   color: #eaf3f5;
@@ -445,15 +630,10 @@ button {
   border-color: rgba(37,211,102,0.4);
 }
 
-/* ===================== TYPING INDICATOR ===================== */
-#chatBottomWrapper {
-  position: relative;
-}
+/* ====================== TYPING INDICATOR ====================== */
+#chatBottomWrapper { position: relative; }
 
-.typing-bubble {
-  position: absolute;
-  bottom: 50px; /* start slightly above input */
-  left: 12px;
+#typingIndicator {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -462,18 +642,13 @@ button {
   border-radius: 16px;
   max-width: 220px;
   opacity: 0;
-  pointer-events: none;
-  transform: translateY(20px);
   transition: all 0.3s ease;
-  z-index: 10;
+  margin-bottom: 6px;
 }
 
-.typing-bubble.show {
-  opacity: 1;
-  transform: translateY(0); /* slide up */
-}
+#typingIndicator.show { opacity: 1; }
 
-.typing-bubble img {
+#typingIndicator img {
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -496,15 +671,227 @@ button {
   animation: bounce 1s infinite;
 }
 
-.typing-dots .dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing-dots .dot:nth-child(3) {
-  animation-delay: 0.4s;
-}
+.typing-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots .dot:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes bounce {
   0%, 80%, 100% { transform: translateY(0); }
   40% { transform: translateY(-6px); }
+}
+
+
+
+/* ====================== ONLINE/OFFLINE STATUS DOT ====================== */
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--panel); /* gives border to separate from avatar */
+  background-color: gray; /* default offline */
+}
+
+.status-dot.online {
+  background-color: var(--accent); /* green for online */
+}
+
+.status-dot.offline {
+  background-color: #777; /* gray for offline */
+}
+
+
+.system-message {
+  text-align: center;
+  color: #888;       /* default system text color */
+  font-size: 0.9em;
+  margin: 10px 0;
+  font-style: italic;
+}
+
+/* Highlight the username part */
+.system-message strong {
+  font-weight: 600;          /* slightly bold */
+  color: #3b82f6;            /* blue-ish color, change as you like */
+}
+
+
+/* ---------------- SEARCH BAR ---------------- */
+.room-search {
+  display: flex;
+  align-items: center;
+  padding: 5px 8px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.room-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 6px;
+  font-size: 14px;
+  background: transparent;
+}
+
+.room-search .search-icon {
+  margin-left: 6px;
+  font-size: 16px;
+  color: #888;
+}
+
+
+/* ====================== CHAT IMAGES ====================== */
+.chat-image {
+  max-width: 350px;
+  max-height: 300px;
+  border-radius: 12px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-image:hover {
+  transform: scale(1.04);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+}
+
+/* ====================== CHAT LINKS ====================== */
+
+.chat-link {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(96, 165, 250, 0.18);
+  border-left: 4px solid #60a5fa;
+  color: #eff6ff;
+  text-decoration: none;
+  font-size: 14px;
+  word-break: break-all;
+  transition: background 0.2s ease;
+}
+
+/* FORCE same color even after click */
+.chat-link:link,
+.chat-link:visited,
+.chat-link:active {
+  color: #eff6ff;
+  text-decoration: none;
+}
+
+.chat-link:hover {
+  background: rgba(96, 165, 250, 0.3);
+  text-decoration: underline;
+}
+
+
+/* ====================== CHAT DOCUMENTS ====================== */
+/* Anchor-safe document card (NO blur, NO link look) */
+/* ====================== WHATSAPP STYLE DOCUMENT ====================== */
+a.chat-document {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+  box-shadow: none;
+
+  cursor: pointer;
+}
+
+/* No link color change EVER */
+a.chat-document:link,
+a.chat-document:visited,
+a.chat-document:active,
+a.chat-document:focus {
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+}
+
+/* Hover = WhatsApp subtle */
+a.chat-document:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+/* Icon */
+.chat-document .doc-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(37, 211, 102, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--accent);
+}
+
+/* Text */
+.chat-document .doc-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-document .doc-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8f0f2;
+}
+
+.chat-document .doc-size {
+  font-size: 11px;
+  color: #9aa7ad;
+}
+
+
+/* ====================== BUBBLE SPACING ====================== */
+.bubble > *:not(:first-child) {
+  margin-top: 4px;
+}
+
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 10000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.8);
+
+  display: flex;
+  justify-content: center; /* horizontal center */
+  align-items: center;     /* vertical center */
+  overflow: hidden;        /* prevent scrolling */
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal img {
+  max-width: 90vw;        /* scale to screen width */
+  max-height: 90vh;       /* scale to screen height */
+  border-radius: 12px;
+  object-fit: contain;    /* keep aspect ratio */
+  cursor: pointer;
 }
