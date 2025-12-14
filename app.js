@@ -525,19 +525,38 @@ msgInput.addEventListener("input", () => {
 
   if (typingTimeout) clearTimeout(typingTimeout);
 
-  // Remove typing after 2s of inactivity
-  typingTimeout = setTimeout(() => remove(userTypingRef), 2000);
+  // Remove typing after 1.5s of inactivity
+  typingTimeout = setTimeout(() => remove(userTypingRef), 1500);
 });
+
+// Remove typing indicator immediately when user sends a message
+window.sendMessage = async function(messageText) {
+  if (!activeRoom || !currentUser || !messageText.trim()) return;
+
+  const messagesRef = ref(db, `messages/${activeRoom}`);
+  const newMsgRef = push(messagesRef);
+  await set(newMsgRef, {
+    sender: currentUser.uid,
+    text: messageText,
+    time: Date.now()
+  });
+
+  // Remove typing status immediately
+  const userTypingRef = ref(db, `typing/${activeRoom}/${currentUser.uid}`);
+  remove(userTypingRef);
+  msgInput.value = ""; // clear input
+};
 
 // Function to listen for typing users in the current room
 function listenTyping(roomID) {
   // Remove previous listener if exists
-  if (typingRef) typingRef.off();
+  if (typingRef) typingRef.off(); 
 
   typingRef = ref(db, `typing/${roomID}`);
   onValue(typingRef, snap => {
+    // Clear indicator if no one is typing
     if (!snap.exists()) {
-      typingIndicator.classList.remove("show"); // hide
+      typingIndicator.classList.add("hidden");
       typingIndicator.innerHTML = "";
       return;
     }
@@ -548,43 +567,36 @@ function listenTyping(roomID) {
     });
 
     if (typingUsers.length === 0) {
-      typingIndicator.classList.remove("show"); // hide
+      typingIndicator.classList.add("hidden");
       typingIndicator.innerHTML = "";
       return;
     }
 
-    typingIndicator.classList.add("show"); // show
+    typingIndicator.classList.remove("hidden");
     typingIndicator.innerHTML = "";
 
     // Show only the first typing user
     const uid = typingUsers[0];
     const user = usersCache[uid] || { photoURL: DEFAULT_AVATAR, nickname: "User" };
 
+    // Avatar
     const avatar = document.createElement("img");
     avatar.src = user.photoURL || DEFAULT_AVATAR;
     avatar.className = "typing-avatar";
 
+    // Animated dots
     const dots = document.createElement("div");
     dots.className = "typing-dots";
     dots.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
 
     typingIndicator.appendChild(avatar);
     typingIndicator.appendChild(dots);
+
+    // Place typingIndicator at the bottom of messages
+    const messagesContainer = document.querySelector(".messages");
+    messagesContainer.appendChild(typingIndicator);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
   });
 }
 
-// ------------------------ CALL LISTENER WHEN OPENING ROOM ------------------------
-window.openRoom = async function(roomID) {
-  activeRoom = roomID;
-  localStorage.setItem("activeRoom", roomID);
 
-  const snap = await get(ref(db, `rooms/${roomID}`));
-  if (!snap.exists()) return;
-
-  const roomData = snap.val();
-  chatHeader.innerText = roomData.chatName;
-  updateRoomInfo(roomID, roomData.pass, roomData.chatName, roomData.roomURL);
-
-  listenMessages(roomID);
-  listenTyping(roomID); // ✅ listen for typing in the current room
-};
