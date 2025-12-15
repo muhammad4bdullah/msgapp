@@ -231,8 +231,8 @@ button {
 }
 
 .bubble {
-  background: rgba(37, 211, 102, 0.15);
-  color: #e8f0f2;
+  background: rgba(255, 255, 255, 0.15); /* neutral bubble */
+  color: #111; /* readable text */
   padding: 6px 10px;
   border-radius: 16px;
   display: flex;
@@ -261,13 +261,10 @@ button {
   justify-content: flex-start;
 }
 
-/* Opponent message bubble different color */
 .message:not(.mine) .bubble {
-  background: rgba(59, 130, 246, 0.15); /* light blue for opponent */
-  color: #e8f0f2;
+  background:rgba(255, 255, 255, 0.15);  /* white/light bubble */
+  color: #ffffff; /* readable text */
 }
-
-
 
 .message:not(.mine) .msg-avatar {
   order: 0;
@@ -281,8 +278,8 @@ button {
 }
 
 .mine .bubble {
-  background: rgba(37, 211, 102, 0.25);
-  color: #e8f0f2;
+  background: rgba(59, 130, 246, 0.15);  /* soft light blue for mine */
+  color: #ffffff; /* readable text */
   min-width: 120px;
   max-width: 320px;
 }
@@ -292,6 +289,20 @@ button {
   margin-left: 4px;
   margin-top: 0;
 }
+
+/* ====================== NEW MESSAGE ANIMATION ====================== */
+.new-msg {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.25s ease;
+}
+
+.new-msg.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
 
 /* ====================== CHAT BOTTOM ====================== */
 #chatBottom {
@@ -894,4 +905,62 @@ a.chat-document:hover {
   border-radius: 12px;
   object-fit: contain;    /* keep aspect ratio */
   cursor: pointer;
+}
+
+
+/* ================= IMAGE VIEWER ================= */
+#imageViewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 999999;
+
+  /* start hidden */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+#imageViewer.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#imageViewer.hidden {
+  display: none;
+}
+
+#imageViewer img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 12px;
+
+  /* start slightly smaller for scale animation */
+  transform: scale(0.95);
+  transition: transform 0.25s ease;
+}
+
+#imageViewer.show img {
+  transform: scale(1);
+}
+
+#imageViewerClose {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 28px;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* optional: smooth transition for closing background fade */
+#imageViewer.closing {
+  opacity: 0;
+  pointer-events: none;
 }
