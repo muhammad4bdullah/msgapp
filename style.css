@@ -964,3 +964,14 @@ a.chat-document:hover {
   opacity: 0;
   pointer-events: none;
 }
+
+.room-menu .menu-btn {
+    padding: 6px 12px;
+    margin: 2px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    background: #0f0f0f;
+}
+.room-menu .menu-btn:hover {
+    background: #302e2e;
+}
