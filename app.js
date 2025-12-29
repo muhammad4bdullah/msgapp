@@ -27,6 +27,7 @@ let activeRoom = localStorage.getItem("activeRoom") || null;
 let roomFilter = "all";
 let usersCache = {}; // Cache for user data to avoid re-fetching
 let myStatusRef = null;
+let activeRoomCreator = null;
 
 
 // ------------------------ UI ELEMENTS ------------------------
@@ -255,10 +256,18 @@ async function handleRoomLink(roomID, passFromURL) {
   if (!pass) return;
   if (snap.val().pass !== pass) return alert("Wrong password");
 
+  // ✅ Prevent rejoin if kicked
+  const kickedSnap = await get(ref(db, `kicked/${roomID}/${currentUser.uid}`));
+  if (kickedSnap.exists()) return alert("You were kicked from this room.");
+
+  // Add user to members
   await set(ref(db, `members/${roomID}/${currentUser.uid}`), true);
+
   openRoom(roomID);
   updateRoomInfo(roomID, pass, snap.val().chatName, snap.val().roomURL);
 }
+
+
 
 // ------------------------ CREATE & JOIN ROOM ------------------------
 btnShowCreate.onclick = () => { createRoomSection.classList.toggle("hidden"); joinRoomSection.classList.add("hidden"); };
@@ -296,12 +305,17 @@ btnJoin.onclick = async () => {
   if (!snap.exists()) return alert("Room not found");
   if (snap.val().pass !== pass) return alert("Wrong password");
 
+  // ✅ Check if user is kicked
+  const kickedSnap = await get(ref(db, `kicked/${id}/${currentUser.uid}`));
+  if (kickedSnap.exists()) return alert("You were kicked from this room.");
+
   await set(ref(db, `members/${id}/${currentUser.uid}`), true);
   openRoom(id);
   pushSystemMessage(id, `<strong>${userNameDisplay.innerText}</strong> has joined the room`);
 
   updateRoomInfo(id, pass, snap.val().chatName, snap.val().roomURL);
 };
+
 
 // ------------------------ ROOM INFO ------------------------
 function updateRoomInfo(id, pass, name, url) {
@@ -372,6 +386,69 @@ function loadRooms() {
     noRooms.classList.toggle("hidden", !found);
   });
 }
+//SHOW ROOOOM MENU
+function showRoomMenu(event, roomID, isCreator) {
+    const oldMenu = document.getElementById("roomMenu");
+    if (oldMenu) oldMenu.remove(); // remove old menu
+
+    const menu = document.createElement("div");
+    menu.id = "roomMenu";
+    menu.className = "room-menu";
+    menu.style.position = "absolute";
+    menu.style.top = event.clientY + "px";
+    menu.style.left = event.clientX + "px";
+    menu.style.background = "#1e1e1e";
+    menu.style.color = "#fff";
+    menu.style.borderRadius = "8px";
+    menu.style.padding = "8px 0";
+    menu.style.minWidth = "150px";
+    menu.style.boxShadow = "0 4px 12px rgba(0,0,0,0.5)";
+    menu.style.zIndex = "10000";
+
+    // Helper to create a menu button
+    const addBtn = (text, color = "#fff", onclick) => {
+        const btn = document.createElement("div");
+        btn.innerText = text;
+        btn.style.padding = "8px 16px";
+        btn.style.cursor = "pointer";
+        btn.style.userSelect = "none";
+        btn.style.color = color;
+        btn.onmouseover = () => btn.style.background = "#333";
+        btn.onmouseout = () => btn.style.background = "transparent";
+        btn.onclick = () => { onclick(); menu.remove(); };
+        menu.appendChild(btn);
+    };
+
+    // Leave Room (not creator)
+    if (!isCreator) addBtn("Leave Room", "#fff", async () => {
+        await remove(ref(db, `members/${roomID}/${currentUser.uid}`));
+        if (activeRoom === roomID) clearUI();
+        loadRooms();
+    });
+
+    // Creator-only buttons
+    if (isCreator) {
+        addBtn("Rename Room", "#fff", () => renameRoom(roomID));
+        addBtn("Change Password", "#fff", () => changeRoomPassword(roomID));
+        addBtn("Delete Room", "red", () => deleteRoom(roomID));
+        addBtn("Unblock Users", "#fff", () => openKickBlockModal(roomID));
+    }
+
+    document.body.appendChild(menu);
+
+    // Remove menu when clicking outside
+    setTimeout(() => {
+        const handler = (e) => {
+            if (!menu.contains(e.target)) menu.remove();
+            document.removeEventListener("click", handler);
+        };
+        document.addEventListener("click", handler);
+    }, 10);
+}
+
+
+
+
 
 // ---------------- ROOM SEARCH ----------------
 const roomSearchInput = document.getElementById("roomSearchInput");
@@ -397,25 +474,27 @@ roomSearchInput.addEventListener("input", () => {
 
 
 // ------------------------ THREE DOTS MENU ------------------------
-function showRoomMenu(e, roomID, isCreator) {
-  const old = document.getElementById("roomMenu");
+function showKickMenu(event, uid, nickname) {
+  const old = document.getElementById("kickMenu");
   if (old) old.remove();
 
   const menu = document.createElement("div");
-  menu.id = "roomMenu";
+  menu.id = "kickMenu";
   menu.className = "room-menu";
   menu.style.position = "fixed";
-  menu.style.top = e.clientY + "px";
-  menu.style.left = e.clientX + "px";
+  menu.style.top = event.clientY + "px";
+  menu.style.left = event.clientX + "px";
   menu.style.zIndex = "50000";
-  menu.innerHTML = `
-    ${isCreator ? `<div onclick="renameRoom('${roomID}')">Rename</div>` : ""}
-    ${isCreator ? `<div onclick="deleteRoom('${roomID}')">Delete</div>` : ""}
-    ${!isCreator ? `<div onclick="leaveRoom('${roomID}')">Leave Room</div>` : ""}
-  `;
+
+  menu.innerHTML = `<div onclick="kickUser('${uid}', '${nickname}')">Kick</div>`;
   document.body.appendChild(menu);
-  setTimeout(() => { document.addEventListener("click", () => menu.remove(), { once: true }); }, 50);
+
+  setTimeout(() => {
+    document.addEventListener("click", () => menu.remove(), { once: true });
+  }, 50);
 }
+
+
 
 window.leaveRoom = async function(roomID) {
   if (!confirm("Do you want to leave this room?")) return;
@@ -438,6 +517,79 @@ window.leaveRoom = async function(roomID) {
 
   alert("You have left the room.");
 };
+
+async function openKickBlockModal(roomID) {
+  // Get all blocked users for this room
+  const snap = await get(ref(db, `kicked/${roomID}`));
+  const blocked = snap.exists() ? snap.val() : {};
+
+  // If no blocked users, show alert
+  if (Object.keys(blocked).length === 0) return alert("No blocked users");
+
+  // Create modal
+  const modal = document.createElement("div");
+  modal.id = "blockModal";
+  modal.style.position = "fixed";
+  modal.style.top = "50%";
+  modal.style.left = "50%";
+  modal.style.transform = "translate(-50%, -50%)";
+  modal.style.background = "#222";
+  modal.style.color = "#fff";
+  modal.style.padding = "20px";
+  modal.style.borderRadius = "10px";
+  modal.style.zIndex = "100000";
+  modal.style.maxHeight = "80vh";
+  modal.style.overflowY = "auto";
+  modal.style.minWidth = "300px";
+
+  const title = document.createElement("h3");
+  title.innerText = "Blocked Users";
+  modal.appendChild(title);
+
+  Object.keys(blocked).forEach(uid => {
+    const user = usersCache[uid] || { nickname: "User" };
+    const row = document.createElement("div");
+    row.style.display = "flex";
+    row.style.justifyContent = "space-between";
+    row.style.marginTop = "6px";
+
+    const name = document.createElement("span");
+    name.innerText = user.nickname || uid;
+
+    const unblockBtn = document.createElement("button");
+    unblockBtn.innerText = "Unblock";
+    unblockBtn.style.background = "green";
+    unblockBtn.style.color = "#fff";
+    unblockBtn.style.border = "none";
+    unblockBtn.style.borderRadius = "4px";
+    unblockBtn.style.cursor = "pointer";
+    unblockBtn.onclick = async () => {
+      await remove(ref(db, `kicked/${roomID}/${uid}`));
+      alert(`${user.nickname} has been unblocked`);
+      row.remove();
+    };
+
+    row.appendChild(name);
+    row.appendChild(unblockBtn);
+    modal.appendChild(row);
+  });
+
+  // Close button
+  const closeBtn = document.createElement("button");
+  closeBtn.innerText = "Close";
+  closeBtn.style.marginTop = "12px";
+  closeBtn.style.background = "#555";
+  closeBtn.style.color = "#fff";
+  closeBtn.style.border = "none";
+  closeBtn.style.borderRadius = "4px";
+  closeBtn.style.padding = "6px 12px";
+  closeBtn.style.cursor = "pointer";
+  closeBtn.onclick = () => modal.remove();
+  modal.appendChild(closeBtn);
+
+  document.body.appendChild(modal);
+}
+
 
 
 // ------------------------ RENAME & DELETE ------------------------
@@ -492,6 +644,50 @@ function pushSystemMessage(roomID, text) {
 }
 
 
+
+
+
+
+// Removes a user from the room and posts a system message
+async function kickUser(uid, name) {
+  if (!activeRoom) return;
+  if (currentUser.uid !== activeRoomCreator) return; // safety check
+
+  // Remove user from members
+  await remove(ref(db, `members/${activeRoom}/${uid}`));
+
+  // Mark user as kicked
+  await set(ref(db, `kicked/${activeRoom}/${uid}`), true);
+
+  // Post system message
+  pushSystemMessage(
+    activeRoom,
+    `<strong>${name}</strong> was kicked by <strong>${userNameDisplay.innerText}</strong>`
+  );
+}
+
+
+window.changeRoomPassword = async function(roomID) {
+  const snap = await get(ref(db, `rooms/${roomID}`));
+  if (!snap.exists() || snap.val().createdBy !== currentUser.uid) return;
+
+  const newPass = prompt("Enter new room password (6-12 lowercase letters or digits):");
+  if (!newPass || !/^[a-z0-9]{6,12}$/.test(newPass)) {
+    return alert("Invalid password format.");
+  }
+
+  await update(ref(db, `rooms/${roomID}`), { pass: newPass });
+
+  // Update room info UI if currently active
+  if (activeRoom === roomID) {
+    updateRoomInfo(roomID, newPass, snap.val().chatName, snap.val().roomURL);
+  }
+
+  alert("Room password updated successfully!");
+};
+
+
+
 // ------------------------ OPEN ROOM ------------------------
 window.openRoom = async function(roomID) {
   activeRoom = roomID;
@@ -501,11 +697,15 @@ window.openRoom = async function(roomID) {
   if (!snap.exists()) return;
 
   const roomData = snap.val();
+  activeRoomCreator = roomData.createdBy; // store room creator UID
+
   chatHeader.innerText = roomData.chatName;
   updateRoomInfo(roomID, roomData.pass, roomData.chatName, roomData.roomURL);
 
   listenMessages(roomID);  
-  listenTyping(roomID);    
+  listenTyping(roomID);  
+  listenForKick(roomID); // listen if this user is kicked
+  
 };
 
 // ------------------------ LISTEN MESSAGES ------------------------
@@ -543,7 +743,19 @@ function listenMessages(roomID) {
       const avatar = document.createElement("img");
       avatar.src = d.photoURL || DEFAULT_AVATAR;
       avatar.className = "msg-avatar";
-      avatar.onclick = () => openProfileModal(d.uid, d.uid === currentUser.uid);
+      avatar.onclick = () => {
+  openProfileModal(d.uid, d.uid === currentUser.uid);
+
+  // Only creator can kick others
+  if (currentUser.uid === activeRoomCreator && d.uid !== currentUser.uid) {
+    avatar.oncontextmenu = (e) => { // right-click to kick
+      e.preventDefault();
+      showKickMenu(d.uid, d.nickname);
+    };
+  }
+};
+
+
 
       // BUBBLE
       const bubble = document.createElement("div");
@@ -662,17 +874,42 @@ async function openProfileModal(uid, editable) {
   modalPhoto.style.cursor = editable ? "pointer" : "default";
   modalPhoto.onclick = editable ? () => avatarInput.click() : null;
 
-  // listen to user's online/offline status
-const modalStatusDot = document.getElementById("modalStatus");
-const statusRef = ref(db, `status/${uid}`);
+  // Remove any previous kick button
+  const oldKickBtn = document.getElementById("kickUserBtn");
+  if (oldKickBtn) oldKickBtn.remove();
 
-onValue(statusRef, snap => {
-  const state = snap.exists() ? snap.val().state : "offline";
-  updateStatusDot(modalStatusDot, state);
-});
+  // ✅ Add kick button if current user is creator & opening another user's profile
+  if (currentUser.uid === activeRoomCreator && uid !== currentUser.uid) {
+    const kickBtn = document.createElement("button");
+    kickBtn.id = "kickUserBtn";
+    kickBtn.innerText = "Kick User";
+    kickBtn.style.background = "red";
+    kickBtn.style.color = "white";
+    kickBtn.style.padding = "6px 12px";
+    kickBtn.style.border = "none";
+    kickBtn.style.borderRadius = "6px";
+    kickBtn.style.cursor = "pointer";
+    kickBtn.onclick = async () => {
+      if (!confirm(`Are you sure you want to kick ${data.nickname}?`)) return;
+      await remove(ref(db, `members/${activeRoom}/${uid}`));
+      await set(ref(db, `kicked/${activeRoom}/${uid}`), true);
+      pushSystemMessage(activeRoom, `<strong>${data.nickname}</strong> was kicked by <strong>${userNameDisplay.innerText}</strong>`);
+      profileModal.classList.remove("show");
+    };
+    profileModal.querySelector(".modal-footer")?.appendChild(kickBtn);
+  }
+
+  // Online/offline status
+  const modalStatusDot = document.getElementById("modalStatus");
+  const statusRef = ref(db, `status/${uid}`);
+  onValue(statusRef, snap => {
+    const state = snap.exists() ? snap.val().state : "offline";
+    updateStatusDot(modalStatusDot, state);
+  });
 
   profileModal.classList.add("show");
 }
+
 
 // ---------- AVATAR PICKER ----------
 const avatarInput = document.getElementById("avatarInput");
@@ -770,6 +1007,21 @@ window.addEventListener("load", async () => {
 
 profileModal.querySelector(".modal-content")?.addEventListener("click", e => e.stopPropagation());
 profileModal.addEventListener("click", () => profileModal.classList.remove("show"));
+
+// ------------------------ LISTEN FOR KICK ------------------------
+// Forces user to leave UI if removed from the room
+function listenForKick(roomID) {
+  const myMemberRef = ref(db, `members/${roomID}/${currentUser.uid}`);
+  onValue(myMemberRef, snap => {
+    if (!snap.exists() && activeRoom === roomID) {
+      activeRoom = null;
+      localStorage.removeItem("activeRoom");
+      clearUI();
+      alert("You were kicked from the room");
+    }
+  });
+}
+
 
 // ------------------------ TYPING INDICATOR ------------------------
 let typingTimeout = null;
@@ -910,3 +1162,4 @@ attachmentFileInput.addEventListener("change", (e) => {
 
   attachmentFileInput.value = ""; // reset input
 });
+
