@@ -19,7 +19,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
-const DEFAULT_AVATAR = "https://i.ibb.co/7QpKsCX/default-avatar.png";
+// const DEFAULT_AVATAR = "https://i.ibb.co/7QpKsCX/default-avatar.png";
+const usersContainerIcon = document.getElementById("usersContainerIcon");
+const usersMenu = document.getElementById("usersMenu");
+const usersList = document.getElementById("usersList");
+const closeUsersMenu = document.getElementById("closeUsersMenu");
 
 // ------------------------ GLOBALS ------------------------
 let currentUser = null;
@@ -28,7 +32,7 @@ let roomFilter = "all";
 let usersCache = {}; // Cache for user data to avoid re-fetching
 let myStatusRef = null;
 let activeRoomCreator = null;
-
+let activeRoomID = null; // track current room
 
 // ------------------------ UI ELEMENTS ------------------------
 const mainScreen = document.getElementById("main");
@@ -177,24 +181,28 @@ onAuthStateChanged(auth, async user => {
 });
 
 // ------------------------ USER PRESENCE ------------------------
+import { serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
 function setUserOnline(uid) {
   myStatusRef = ref(db, `status/${uid}`);
 
   // set online
   set(myStatusRef, {
     state: "online",
-    lastChanged: Date.now()
+    lastChanged: serverTimestamp()
   });
 
   // auto set offline if tab closes / internet drops
   onDisconnect(myStatusRef).set({
     state: "offline",
-    lastChanged: Date.now()
+    lastChanged: serverTimestamp()
   });
 
   // update my own UI dot
   updateStatusDot(myStatusDot, "online");
 }
+
+
 
 function updateStatusDot(dotEl, state) {
   if (!dotEl) return;
@@ -210,31 +218,39 @@ async function loadUserProfile(uid) {
 
   let data;
 
+  // 🆕 FIRST LOGIN — CREATE PROFILE ONCE
   if (!snap.exists()) {
-  // first login - already set
-} else {
-  data = snap.val();
-  let needsUpdate = false;
-  if (!data.username) { data.username = "user" + uid.slice(0, 6); needsUpdate = true; }
-  if (!data.nickname) { data.nickname = "User"; needsUpdate = true; }
-  if (!data.photoURL) { data.photoURL = DEFAULT_AVATAR; needsUpdate = true; }
+    data = {
+      username: `user${uid.slice(0, 6)}`,
+      nickname: "User",
+      photoURL: DEFAULT_AVATAR,
+      dob: "",
+      createdAt: Date.now(),
+      lastLogin: Date.now(),
+      lastUsernameChange: 0,
+      lastNicknameChange: 0
+    };
 
-  if (needsUpdate) await update(userRef, {
-    username: data.username,
-    nickname: data.nickname,
-    photoURL: data.photoURL
-  });
+    // reserve username
+    await set(ref(db, `usernames/${data.username}`), uid);
 
-  await update(userRef, { lastLogin: Date.now() });
-}
+    await set(userRef, data);
+  }
+  // ✅ EXISTING USER — DO NOT OVERWRITE
+  else {
+    data = snap.val();
 
-  // Cache user
+    // only update lastLogin
+    await update(userRef, { lastLogin: Date.now() });
+  }
+
+  // cache
   usersCache[uid] = data;
 
-  // Update UI
+  // UI
   userPhoto.src = data.photoURL || DEFAULT_AVATAR;
-  userNameDisplay.innerText = data.nickname || data.displayName || "User";
-  userEmail.innerText = data.email || currentUser.email || "No email";
+  userNameDisplay.innerText = data.nickname || "User";
+  userEmail.innerText = data.email || currentUser.email || "";
 }
 
 
@@ -256,16 +272,21 @@ async function handleRoomLink(roomID, passFromURL) {
   if (!pass) return;
   if (snap.val().pass !== pass) return alert("Wrong password");
 
-  // ✅ Prevent rejoin if kicked
   const kickedSnap = await get(ref(db, `kicked/${roomID}/${currentUser.uid}`));
   if (kickedSnap.exists()) return alert("You were kicked from this room.");
 
-  // Add user to members
   await set(ref(db, `members/${roomID}/${currentUser.uid}`), true);
+
+  pushSystemMessage(roomID, `<strong>${userNameDisplay.innerText}</strong> has joined the room`);
 
   openRoom(roomID);
   updateRoomInfo(roomID, pass, snap.val().chatName, snap.val().roomURL);
+
+  // ✅ remove room info from URL so refresh won't push system msg again
+  window.history.replaceState({}, document.title, window.location.pathname);
 }
+
+
 
 
 
@@ -499,10 +520,10 @@ function showKickMenu(event, uid, nickname) {
 window.leaveRoom = async function(roomID) {
   if (!confirm("Do you want to leave this room?")) return;
 
-  // push system message before leaving
+  // ✅ Push system message first
   pushSystemMessage(roomID, `<strong>${userNameDisplay.innerText}</strong> has left the room`);
 
-  // remove this user from the members of the room
+  // Remove this user from the members of the room
   await remove(ref(db, `members/${roomID}/${currentUser.uid}`));
 
   // If user was in this active room, clear UI
@@ -512,11 +533,13 @@ window.leaveRoom = async function(roomID) {
     clearUI();
   }
 
-  // reload the room list
+  // Reload the room list
   loadRooms();
 
   alert("You have left the room.");
 };
+
+
 
 async function openKickBlockModal(roomID) {
   // Get all blocked users for this room
@@ -649,22 +672,44 @@ function pushSystemMessage(roomID, text) {
 
 
 // Removes a user from the room and posts a system message
-async function kickUser(uid, name) {
-  if (!activeRoom) return;
-  if (currentUser.uid !== activeRoomCreator) return; // safety check
+// Assume you have these references
+const activeRoomRef = ref(db, `rooms/${activeRoom}/messages`);
+const blockedUsersRef = ref(db, `rooms/${activeRoom}/blockedUsers`);
 
-  // Remove user from members
-  await remove(ref(db, `members/${activeRoom}/${uid}`));
+async function kickUser(uid) {
+    // 1. Check if already blocked
+    const snap = await get(ref(db, `rooms/${activeRoom}/blockedUsers/${uid}`));
+    if (snap.exists()) {
+        alert("This user is already blocked.");
+        return;
+    }
 
-  // Mark user as kicked
-  await set(ref(db, `kicked/${activeRoom}/${uid}`), true);
+    // 2. Add to blocked users
+    await set(ref(db, `rooms/${activeRoom}/blockedUsers/${uid}`), true);
 
-  // Post system message
-  pushSystemMessage(
-    activeRoom,
-    `<strong>${name}</strong> was kicked by <strong>${userNameDisplay.innerText}</strong>`
-  );
+    // 3. Push system message (only once)
+    const systemMsgSnap = await get(activeRoomRef);
+    const existingSystemMsg = Object.values(systemMsgSnap.val() || {}).some(msg =>
+        msg.type === "system" && msg.action === "kicked" && msg.target === uid
+    );
+    if (!existingSystemMsg) {
+        const systemMsg = {
+            type: "system",
+            action: "kicked",
+            target: uid,
+            text: `User has been kicked.`,
+            timestamp: Date.now()
+        };
+        await push(activeRoomRef, systemMsg);
+    }
+
+    // 4. Clear UI if this user is the current client
+    if (auth.currentUser.uid === uid) {
+        document.getElementById("messagesContainer").innerHTML = ""; // Clear chat UI
+        alert("You have been kicked from the room.");
+    }
 }
+
 
 
 window.changeRoomPassword = async function(roomID) {
@@ -676,11 +721,16 @@ window.changeRoomPassword = async function(roomID) {
     return alert("Invalid password format.");
   }
 
+  // Update password in DB
   await update(ref(db, `rooms/${roomID}`), { pass: newPass });
+
+  // Update roomURL
+  const newURL = `${location.origin}${location.pathname}?room=${roomID}&pass=${newPass}`;
+  await update(ref(db, `rooms/${roomID}`), { roomURL: newURL });
 
   // Update room info UI if currently active
   if (activeRoom === roomID) {
-    updateRoomInfo(roomID, newPass, snap.val().chatName, snap.val().roomURL);
+    updateRoomInfo(roomID, newPass, snap.val().chatName, newURL);
   }
 
   alert("Room password updated successfully!");
@@ -688,8 +738,9 @@ window.changeRoomPassword = async function(roomID) {
 
 
 
+
 // ------------------------ OPEN ROOM ------------------------
-window.openRoom = async function(roomID) {
+window.openRoom = async function (roomID) {
   activeRoom = roomID;
   localStorage.setItem("activeRoom", roomID);
 
@@ -697,16 +748,22 @@ window.openRoom = async function(roomID) {
   if (!snap.exists()) return;
 
   const roomData = snap.val();
-  activeRoomCreator = roomData.createdBy; // store room creator UID
+  activeRoomCreator = roomData.createdBy;
 
   chatHeader.innerText = roomData.chatName;
   updateRoomInfo(roomID, roomData.pass, roomData.chatName, roomData.roomURL);
 
-  listenMessages(roomID);  
-  listenTyping(roomID);  
-  listenForKick(roomID); // listen if this user is kicked
-  
+  listenMessages(roomID);
+  listenTyping(roomID);
+  listenForKick(roomID); // <-- ensures kicked users are immediately cleared
+
+  // Users panel
+  loadRoomMembers(roomID);
+  usersPanelBtn.style.display = "flex";
 };
+
+
+
 
 // ------------------------ LISTEN MESSAGES ------------------------
 function listenMessages(roomID) {
@@ -762,10 +819,19 @@ function listenMessages(roomID) {
       bubble.className = "bubble";
 
       // NAME
-      const name = document.createElement("div");
-      name.className = "msg-name";
-      name.textContent = d.nickname || "User";
-      bubble.appendChild(name);
+const name = document.createElement("div");
+name.className = "msg-name";
+name.textContent = d.nickname || "User";
+
+// ✅ CREATOR = RED, OTHERS = GREEN
+if (d.uid === activeRoomCreator) {
+  name.style.color = "red";
+} else {
+  name.style.color = "limegreen";
+}
+
+bubble.appendChild(name);
+
 
       // MESSAGE CONTENT
       if (d.type === "image") {
@@ -874,31 +940,6 @@ async function openProfileModal(uid, editable) {
   modalPhoto.style.cursor = editable ? "pointer" : "default";
   modalPhoto.onclick = editable ? () => avatarInput.click() : null;
 
-  // Remove any previous kick button
-  const oldKickBtn = document.getElementById("kickUserBtn");
-  if (oldKickBtn) oldKickBtn.remove();
-
-  // ✅ Add kick button if current user is creator & opening another user's profile
-  if (currentUser.uid === activeRoomCreator && uid !== currentUser.uid) {
-    const kickBtn = document.createElement("button");
-    kickBtn.id = "kickUserBtn";
-    kickBtn.innerText = "Kick User";
-    kickBtn.style.background = "red";
-    kickBtn.style.color = "white";
-    kickBtn.style.padding = "6px 12px";
-    kickBtn.style.border = "none";
-    kickBtn.style.borderRadius = "6px";
-    kickBtn.style.cursor = "pointer";
-    kickBtn.onclick = async () => {
-      if (!confirm(`Are you sure you want to kick ${data.nickname}?`)) return;
-      await remove(ref(db, `members/${activeRoom}/${uid}`));
-      await set(ref(db, `kicked/${activeRoom}/${uid}`), true);
-      pushSystemMessage(activeRoom, `<strong>${data.nickname}</strong> was kicked by <strong>${userNameDisplay.innerText}</strong>`);
-      profileModal.classList.remove("show");
-    };
-    profileModal.querySelector(".modal-footer")?.appendChild(kickBtn);
-  }
-
   // Online/offline status
   const modalStatusDot = document.getElementById("modalStatus");
   const statusRef = ref(db, `status/${uid}`);
@@ -942,18 +983,47 @@ modalSaveProfile.onclick = async () => {
     return;
   }
 
-  const newUsername = modalUsername.value.trim();
-  const newNickname = modalNickname.value.trim();
+  const newUsername = modalUsername.value.trim().toLowerCase();
+modalUsername.value = newUsername; // ✅ SHOW lowercase in input
 
-  await update(ref(db, `users/${currentUser.uid}`), {
-    username: newUsername,
-    displayName: newNickname,
-    nickname: newNickname,
-    dob: modalDOB.value,
-    photoURL: modalPhoto.src,
-    lastUsernameChange: (newUsername !== data.username) ? now : data.lastUsernameChange || 0,
-    lastNicknameChange: (newNickname !== data.nickname) ? now : data.lastNicknameChange || 0
-  });
+const newNickname = modalNickname.value.trim();
+
+
+  // ✅ USERNAME VALIDATION
+if (!/^[a-z0-9_]{3,16}$/.test(newUsername)) {
+  alert("Username must be 3–16 characters (letters, numbers, underscore)");
+  return;
+}
+
+const usernameRef = ref(db, `usernames/${newUsername}`);
+const usernameSnap = await get(usernameRef);
+
+if (usernameSnap.exists() && usernameSnap.val() !== currentUser.uid) {
+  alert("Username already taken");
+  return;
+}
+
+
+  // Remove old username mapping
+if (data.username && data.username !== newUsername) {
+  await remove(ref(db, `usernames/${data.username}`));
+}
+
+
+// Reserve new username
+await set(ref(db, `usernames/${newUsername}`), currentUser.uid);
+
+// Update user profile
+await update(ref(db, `users/${currentUser.uid}`), {
+  username: newUsername,
+  displayName: newNickname,
+  nickname: newNickname,
+  dob: modalDOB.value,
+  photoURL: modalPhoto.src,
+  lastUsernameChange: (newUsername !== data.username) ? now : data.lastUsernameChange || 0,
+  lastNicknameChange: (newNickname !== data.nickname) ? now : data.lastNicknameChange || 0
+});
+
 
   usersCache[currentUser.uid] = {
     ...data,
@@ -1010,18 +1080,57 @@ profileModal.addEventListener("click", () => profileModal.classList.remove("show
 
 // ------------------------ LISTEN FOR KICK ------------------------
 // Forces user to leave UI if removed from the room
-function listenForKick(roomID) {
-  const myMemberRef = ref(db, `members/${roomID}/${currentUser.uid}`);
-  onValue(myMemberRef, snap => {
+
+async function listenForKick(roomID) {
+  if (!currentUser) return;
+
+  const memberRef = ref(db, `members/${roomID}/${currentUser.uid}`);
+  const kickedRef = ref(db, `kicked/${roomID}/${currentUser.uid}`);
+
+  // Function to switch to another room
+  async function switchToAnotherRoom() {
+    const membersSnap = await get(ref(db, `members`));
+    if (!membersSnap.exists()) {
+      clearUI();
+      return;
+    }
+
+    const rooms = [];
+    membersSnap.forEach(roomSnap => {
+      if (roomSnap.child(currentUser.uid).exists() && roomSnap.key !== roomID) {
+        rooms.push(roomSnap.key);
+      }
+    });
+
+    if (rooms.length > 0) {
+      openRoom(rooms[0]); // switch to the first available room
+    } else {
+      clearUI();
+    }
+  }
+
+  // Member removal triggers switch
+  onValue(memberRef, snap => {
     if (!snap.exists() && activeRoom === roomID) {
+      remove(ref(db, `members/${roomID}/${currentUser.uid}`));
       activeRoom = null;
       localStorage.removeItem("activeRoom");
-      clearUI();
+      switchToAnotherRoom();
+      alert("You were kicked from the room");
+    }
+  });
+
+  // Also listen if creator adds to kicked list
+  onValue(kickedRef, snap => {
+    if (snap.exists() && activeRoom === roomID) {
+      remove(ref(db, `members/${roomID}/${currentUser.uid}`));
+      activeRoom = null;
+      localStorage.removeItem("activeRoom");
+      switchToAnotherRoom();
       alert("You were kicked from the room");
     }
   });
 }
-
 
 // ------------------------ TYPING INDICATOR ------------------------
 let typingTimeout = null;
@@ -1163,3 +1272,155 @@ attachmentFileInput.addEventListener("change", (e) => {
   attachmentFileInput.value = ""; // reset input
 });
 
+
+
+
+
+// ------------------ USERS PANEL (STABLE VERSION) ------------------
+let usersPanelUnsub = null;
+
+async function loadRoomMembers(roomID) {
+  if (!roomID) return;
+
+  if (usersPanelUnsub) usersPanelUnsub();
+
+  const membersRef = ref(db, `members/${roomID}`);
+  const statusListeners = {}; // to store unsubscribe functions for status
+
+  usersPanelUnsub = onValue(membersRef, async (snap) => {
+    liveUsersList.innerHTML = "";
+
+    if (!snap.exists()) {
+      liveUsersList.innerHTML = `<div class="muted center">No users in this room</div>`;
+      return;
+    }
+
+    const uids = Object.keys(snap.val());
+
+    // Clear old status listeners
+    Object.values(statusListeners).forEach((unsub) => unsub());
+    
+    // Fetch all user info
+    const users = await Promise.all(
+      uids.map(async (uid) => {
+        if (usersCache[uid]) return { uid, ...usersCache[uid] };
+
+        const userSnap = await get(ref(db, `users/${uid}`));
+        const user = userSnap.exists()
+          ? userSnap.val()
+          : { nickname: "User", photoURL: DEFAULT_AVATAR };
+
+        usersCache[uid] = user;
+        return { uid, ...user };
+      })
+    );
+
+    liveUsersList.innerHTML = "";
+
+    users.forEach((user) => {
+      const item = document.createElement("div");
+      item.className = "userItem";
+      item.style.display = "flex";
+      item.style.alignItems = "center";
+      item.style.gap = "8px";
+      item.style.marginBottom = "6px";
+
+      const avatarWrapper = document.createElement("div");
+      avatarWrapper.style.position = "relative";
+      avatarWrapper.style.width = "40px";
+      avatarWrapper.style.height = "40px";
+
+      const avatar = document.createElement("img");
+      avatar.className = "user-avatar";
+      avatar.src = user.photoURL || DEFAULT_AVATAR;
+      avatar.style.width = "100%";
+      avatar.style.height = "100%";
+      avatar.style.borderRadius = "50%";
+      avatar.style.objectFit = "cover";
+      avatar.style.cursor = "pointer";
+      avatar.onclick = () => openProfileModal(user.uid, user.uid === currentUser.uid);
+
+      const statusDot = document.createElement("span");
+      statusDot.className = "status-dot";
+      statusDot.style.position = "absolute";
+      statusDot.style.bottom = "2px";
+      statusDot.style.right = "2px";
+      statusDot.style.width = "10px";
+      statusDot.style.height = "10px";
+      statusDot.style.borderRadius = "50%";
+      statusDot.style.border = "2px solid white";
+      statusDot.style.background = "gray"; // default offline
+
+      avatarWrapper.appendChild(avatar);
+      avatarWrapper.appendChild(statusDot);
+
+      const name = document.createElement("span");
+      name.textContent = user.nickname || "User";
+      name.style.fontWeight = "500";
+      name.style.color = user.uid === activeRoomCreator ? "red" : "limegreen";
+
+      item.appendChild(avatarWrapper);
+      item.appendChild(name);
+
+      // ✅ KICK BUTTON (only for creator and not self)
+      if (currentUser.uid === activeRoomCreator && user.uid !== currentUser.uid) {
+        const kickBtn = document.createElement("button");
+        kickBtn.textContent = "Kick";
+        kickBtn.style.marginLeft = "auto";
+        kickBtn.style.padding = "4px 8px";
+        kickBtn.style.background = "red";
+        kickBtn.style.color = "#fff";
+        kickBtn.style.border = "none";
+        kickBtn.style.borderRadius = "4px";
+        kickBtn.style.cursor = "pointer";
+        kickBtn.onclick = async () => {
+          if (!confirm(`Kick ${user.nickname}?`)) return;
+
+          // Remove from members
+          await remove(ref(db, `members/${roomID}/${user.uid}`));
+
+          // Mark as kicked
+          await set(ref(db, `kicked/${roomID}/${user.uid}`), true);
+
+          // Push system message
+          pushSystemMessage(
+            roomID,
+            `<strong>${user.nickname}</strong> was kicked by <strong style="color:red">${userNameDisplay.innerText}</strong>`
+          );
+        };
+        item.appendChild(kickBtn);
+      }
+
+      liveUsersList.appendChild(item);
+
+      // ✅ Real-time status listener
+      const statusRef = ref(db, `status/${user.uid}`);
+      statusListeners[user.uid] = onValue(statusRef, (snap) => {
+        const state = snap.exists() ? snap.val().state : "offline";
+        statusDot.style.background = state === "online" ? "limegreen" : "gray";
+      });
+    });
+  });
+}
+
+
+
+
+
+
+// ------------------ USERS PANEL TOGGLE (SAFE) ------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const usersPanelBtn = document.getElementById("usersPanelBtn");
+  const usersPanelMenu = document.getElementById("usersPanelMenu");
+  const closeUsersPanelBtn = document.getElementById("closeUsersPanel");
+
+  if (!usersPanelBtn || !usersPanelMenu || !closeUsersPanelBtn) return;
+
+  usersPanelBtn.addEventListener("click", () => {
+    usersPanelMenu.classList.add("open");
+  });
+
+  closeUsersPanelBtn.addEventListener("click", () => {
+    usersPanelMenu.classList.remove("open");
+  });
+});
