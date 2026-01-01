@@ -520,24 +520,25 @@ function showKickMenu(event, uid, nickname) {
 window.leaveRoom = async function(roomID) {
   if (!confirm("Do you want to leave this room?")) return;
 
-  // ✅ Push system message first
-  pushSystemMessage(roomID, `<strong>${userNameDisplay.innerText}</strong> has left the room`);
-
   // Remove this user from the members of the room
   await remove(ref(db, `members/${roomID}/${currentUser.uid}`));
 
-  // If user was in this active room, clear UI
+  // ✅ Push system message AFTER removal
+  pushSystemMessage(roomID, `<strong>${userNameDisplay.innerText}</strong> has left the room`);
+
+  // Clear UI if this was the active room
   if (activeRoom === roomID) {
     activeRoom = null;
     localStorage.removeItem("activeRoom");
     clearUI();
   }
 
-  // Reload the room list
+  // Reload room list
   loadRooms();
 
   alert("You have left the room.");
 };
+;
 
 
 
@@ -1424,3 +1425,4 @@ document.addEventListener("DOMContentLoaded", () => {
     usersPanelMenu.classList.remove("open");
   });
 });
+
