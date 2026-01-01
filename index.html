@@ -15,7 +15,7 @@
   <!-- PROFILE BAR -->
   <header id="profileBar">
     <div class="avatar-wrapper">
-      <img id="userPhoto" alt="avatar" class="avatar" src="https://i.ibb.co/7QpKsCX/default-avatar.png">
+      <img id="userPhoto" alt="avatar" class="avatar" src="https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/photo.jpg">
       <span id="userStatus" class="status-dot offline"></span>
     </div>
     <div class="profile-info">
@@ -86,7 +86,7 @@
 
         <!-- TYPING INDICATOR -->
         <div id="typingIndicator" class="typing-bubble hidden">
-          <img src="https://i.ibb.co/7QpKsCX/default-avatar.png" alt="avatar">
+          <img src="https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/photo.jpg" alt="avatar">
           <div class="typing-dots">
             <div class="dot"></div>
             <div class="dot"></div>
@@ -100,7 +100,7 @@
 
           <!-- ATTACHMENT MENU -->
           <div class="attachment-wrapper" style="position:relative;">
-            <button id="attachmentBtn">📎</button>
+            <button id="attachmentBtn">Attach</button>
             <div id="attachmentMenu" class="attachment-menu">
               <button id="imageBtn">Image</button>
               <button id="documentBtn">Document</button>
@@ -108,7 +108,7 @@
             </div>
           </div>
 
-          <button id="sendMsg">➤</button>
+          <button id="sendMsg">Send</button>
         </div>
       </div>
     </section>
@@ -127,7 +127,7 @@
 
     <div class="modal-avatar">
       <div class="avatar-wrapper">
-        <img id="modalPhoto" src="https://i.ibb.co/7QpKsCX/default-avatar.png" alt="Avatar">
+        <img id="modalPhoto" src="https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/photo.jpg" alt="Avatar">
         <span id="modalStatus" class="status-dot offline"></span>
       </div>
       <p id="modalInstructions">Click avatar to change</p>
@@ -148,10 +148,7 @@
       <input id="modalDOB" type="date">
     </div>
 
-    <div class="modal-footer">
-      <!-- Kick button will be dynamically added here -->
-    </div>
-
+    <div class="modal-footer"></div>
     <button id="modalSaveProfile" class="save-btn">Save Changes</button>
   </div>
 </div>
@@ -160,6 +157,19 @@
 <div id="imageViewer" class="image-viewer hidden">
   <span id="imageViewerClose">&times;</span>
   <img id="imageViewerImg" src="" alt="Preview">
+</div>
+
+<!-- USERS PANEL -->
+<div id="usersPanelBtn" title="Show Users">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5s-3 1.34-3 3 1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h7v-2.5c0-.83.67-1.5 1.5-1.5h1c.83 0 1.5.67 1.5 1.5V19h7v-2.5c0-2.33-4.67-3.5-7-3.5h-1z"/></svg>
+</div>
+
+<div id="usersPanelMenu">
+  <div class="users-header">
+    <h3>Room Users</h3>
+    <button id="closeUsersPanel">&times;</button>
+  </div>
+  <div id="liveUsersList"></div>
 </div>
 
 <script type="module" src="app.js"></script>
